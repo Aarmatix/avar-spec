@@ -3,6 +3,24 @@
 All notable changes to the AVAR specification are recorded here.
 This project follows [Semantic Versioning](https://semver.org/).
 
+## 1.1.0 — 2026-07-08
+
+### Added
+- `@aarmos/avar-core@1.1.0`: canonical structural diff engine
+  (`diffCanonical`) plus three domain wrappers:
+  - `diffReceipts(a, b)` — bundles or single entries, id-matched, flags
+    signature / entry-hash / step changes and chain-head extension.
+  - `diffPolicies(a, b)` — schema-agnostic canonical diff for policy JSON.
+  - `diffToolManifests(a, b)` — schema-agnostic canonical diff for tool
+    manifests.
+- `avar` standalone binary bumped to `1.1.0` with a new `diff` subcommand:
+  `avar diff <a> <b> [--kind=receipts|policies|manifests] [--json]`.
+  Exit code `0` when equal, `1` when different. Zero network.
+
+### Notes
+- Diff is a free, open primitive — same posture as `avar verify`. The
+  reference library and CLI ship under Apache-2.0 in the open spec repo.
+
 ## [1.0.0-rc] — 2026-07-08
 
 ### Added

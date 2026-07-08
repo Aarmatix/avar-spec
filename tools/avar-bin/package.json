@@ -1,6 +1,6 @@
 {
   "name": "@aarmos/avar-bin",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Standalone AVAR receipt verifier — single-file executable, no Node required. Built with bun --compile.",
   "private": true,
   "type": "module",
@@ -14,7 +14,7 @@
     "build": "bun run build:linux-x64 && bun run build:linux-arm64 && bun run build:darwin-x64 && bun run build:darwin-arm64 && bun run build:windows-x64 && (cd out && sha256sum avar-* > SHA256SUMS)"
   },
   "dependencies": {
-    "@aarmos/avar-core": "1.0.0",
+    "@aarmos/avar-core": "1.1.0",
     "fflate": "^0.8.3"
   }
 }

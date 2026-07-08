@@ -16,3 +16,13 @@ export {
   signedBodyOf,
 } from "./signature";
 export { verifyBundle } from "./verify";
+export {
+  diffCanonical,
+  diffReceipts,
+  diffPolicies,
+  diffToolManifests,
+  type DiffOp,
+  type CanonicalDiff,
+  type ReceiptDiff,
+  type ReceiptEntryChange,
+} from "./diff";
