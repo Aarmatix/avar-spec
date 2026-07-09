@@ -95,6 +95,19 @@ export type AvarEntry = {
   policyIssuer?: string;
   parentTraceId?: string | null;
   delegationChain?: { agentId: string; traceId?: string | null; at: number }[];
+  /**
+   * Cross-party receipt binding (avar/1.2, additive). Pinned when this run
+   * was initiated by an inbound call from another AVAR-speaking node so an
+   * auditor can walk the delegation forest across trust boundaries.
+   * Verifiers MUST treat this field as opaque data and include it in
+   * canonical JSON per §2.
+   */
+  parentReceipt?: {
+    hash: string;
+    issuer?: string;
+    traceId?: string;
+    protocol?: string;
+  };
   prevHash?: string;
   entryHash?: string;
   /**
@@ -106,6 +119,7 @@ export type AvarEntry = {
   /** Optional framework tags — see spec §8. */
   frameworks?: string[];
 } & { [k: `x-${string}`]: unknown };
+
 
 export type BundleManifest = {
   format: "avar/1";
