@@ -17,6 +17,15 @@ export {
 } from "./signature";
 export { verifyBundle } from "./verify";
 export {
+  type AarmosError,
+  type AarmosErrorCode,
+  AARMOS_ERROR_TEMPLATES,
+  aarmosError,
+  formatAarmosErrorLine,
+  classifyReport,
+  AarmosErrorException,
+} from "./errors";
+export {
   diffCanonical,
   diffReceipts,
   diffPolicies,
