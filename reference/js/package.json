@@ -1,7 +1,7 @@
 {
   "name": "@aarmos/avar-core",
-  "version": "1.2.0",
-  "description": "Reference implementation of the AVAR (Aarmos Verifiable Action Record) spec \u2014 canonical JSON, Ed25519 signature verification, hash-chain math, and bundle verification. Pure, zero-dep, browser + Node.",
+  "version": "1.9.0-rc.1",
+  "description": "Reference implementation of the AVAR (Aarmos Verifiable Action Record) spec \u2014 canonical JSON, Ed25519 signature verification, hash-chain math, and bundle verification. Browser + Node, single runtime dep (fflate for .avar.zip parsing).",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -45,7 +45,11 @@
     "access": "public"
   },
   "devDependencies": {
+    "@types/node": "^22.0.0",
     "tsup": "^8.3.0",
     "typescript": "^5.6.2"
+  },
+  "dependencies": {
+    "fflate": "^0.8.3"
   }
 }

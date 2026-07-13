@@ -53,4 +53,4 @@ Apache-2.0. See [`LICENSE`](./LICENSE) and [`NOTICE`](./NOTICE).
 
 ## Spec revision
 
-Tracks `avar/1` spec revision `1.0`. See the [AVAR spec](https://github.com/Aarmatix/avar-spec/blob/main/SPEC.md) for the current revision and changelog.
+Tracks `avar/1` spec revision `1.1` (release candidate; backward-compatible with `1.0-rc1`). See the [AVAR spec](https://github.com/Aarmatix/avar-spec/blob/main/SPEC.md) for the current revision and changelog.

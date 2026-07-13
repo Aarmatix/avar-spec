@@ -73,6 +73,10 @@ async function makeSignedEntry(opts: {
   prevHash: string;
   steps?: TraceStep[];
   agentId?: string;
+  /** Override deviceFingerprint before hashing/signing — used to build a
+   *  fixture whose signature verifies but whose fingerprint does NOT
+   *  match its devicePubKey. */
+  fingerprintOverride?: string;
 }): Promise<AvarEntry> {
   const entry: AvarEntry = {
     id: opts.id,
@@ -88,7 +92,8 @@ async function makeSignedEntry(opts: {
   //   (1) stamp deviceFingerprint + prevHash
   //   (2) compute entryHash over that body
   //   (3) sign the same body (verifier strips only signature + devicePubKey)
-  entry.deviceFingerprint = await computeDeviceFingerprint(opts.key.pubB64u);
+  entry.deviceFingerprint =
+    opts.fingerprintOverride ?? (await computeDeviceFingerprint(opts.key.pubB64u));
   entry.prevHash = opts.prevHash;
   entry.entryHash = await computeEntryHash(entry, opts.prevHash);
   const sigBytes = opts.key.sign(utf8(canonicalize(signedBodyOf(entry))));
@@ -351,6 +356,33 @@ async function makeFixtures(): Promise<Fixture[]> {
         issueKinds: ["chain-broken"],
       },
     },
+
+    // 9. Fingerprint mismatch: signature verifies (fingerprint is part of
+    //    the signed body, so tampering post-signing would break the sig),
+    //    but the declared deviceFingerprint doesn't hash from devicePubKey.
+    //    Isolates FINGERPRINT_MISMATCH end-to-end.
+    {
+      name: "09-invalid-fingerprint",
+      build: async () => {
+        const wrongFp = await computeDeviceFingerprint(key2.pubB64u);
+        const e = await makeSignedEntry({
+          id: "e1",
+          ts: 1,
+          key,
+          prevHash: GENESIS_PREV_HASH,
+          fingerprintOverride: wrongFp,
+        });
+        return buildBundleBytes([e]);
+      },
+      expected: {
+        verdict: "invalid",
+        entryCount: 1,
+        signedCount: 1,
+        unsignedCount: 0,
+        unchainedCount: 0,
+        issueKinds: ["fingerprint-mismatch"],
+      },
+    },
   ];
 }
 
@@ -422,8 +454,41 @@ async function main(): Promise<void> {
       failures.push(`${fx.name} (CLI rc=${res.status} want ${expectedRc})`);
       console.error(`  ✖ CLI parity: ${fx.name}  rc=${res.status} want=${expectedRc}`);
       if (res.stderr) console.error(`      stderr: ${res.stderr.slice(0, 200)}`);
-    } else {
-      console.log(`  ✔ CLI parity: ${fx.name}  rc=${res.status}`);
+      continue;
+    }
+
+    // JSON payload parity: CLI --json stdout must carry the same report
+    // shape the browser drop-zone renders. Compare the canonical subset
+    // (verdict + counts + sorted issue kinds). CLI additionally attaches
+    // `error` on invalid verdicts; that's a superset, not a divergence.
+    let cliParityOk = true;
+    try {
+      const parsed = JSON.parse(res.stdout.trim().split("\n").pop() ?? "{}");
+      const inproc = await verifyBundle(parseBundle(await fx.build()));
+      const cliKinds = Array.isArray(parsed.issues)
+        ? [...new Set(parsed.issues.map((i: { kind: string }) => i.kind))].sort()
+        : [];
+      const inprocKinds = uniqSortedKinds(inproc);
+      cliParityOk =
+        parsed.verdict === inproc.verdict &&
+        parsed.entryCount === inproc.entryCount &&
+        parsed.signedCount === inproc.signedCount &&
+        parsed.unsignedCount === inproc.unsignedCount &&
+        parsed.unchainedCount === inproc.unchainedCount &&
+        eqArr(cliKinds as string[], inprocKinds);
+      if (!cliParityOk) {
+        failures.push(`${fx.name} (CLI JSON diverges)`);
+        console.error(`  ✖ CLI JSON parity: ${fx.name}`);
+        console.error(`      cli:    verdict=${parsed.verdict} kinds=${JSON.stringify(cliKinds)}`);
+        console.error(`      inproc: verdict=${inproc.verdict} kinds=${JSON.stringify(inprocKinds)}`);
+      }
+    } catch (e) {
+      cliParityOk = false;
+      failures.push(`${fx.name} (CLI JSON unparseable)`);
+      console.error(`  ✖ CLI JSON parse: ${fx.name}  ${e instanceof Error ? e.message : e}`);
+    }
+    if (cliParityOk) {
+      console.log(`  ✔ CLI parity: ${fx.name}  rc=${res.status} json=match`);
     }
   }
 
