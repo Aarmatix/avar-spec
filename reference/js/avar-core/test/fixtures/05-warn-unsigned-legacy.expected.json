@@ -1,0 +1,9 @@
+{
+  "verdict": "valid-with-warnings",
+  "entryCount": 1,
+  "signedCount": 0,
+  "unsignedCount": 1,
+  "unchainedCount": 1,
+  "issueKinds": [],
+  "issueKindsFromRun": []
+}

@@ -1,0 +1,13 @@
+{
+  "verdict": "invalid",
+  "entryCount": 2,
+  "signedCount": 2,
+  "unsignedCount": 0,
+  "unchainedCount": 0,
+  "issueKinds": [
+    "chain-broken"
+  ],
+  "issueKindsFromRun": [
+    "chain-broken"
+  ]
+}
