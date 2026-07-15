@@ -1,0 +1,12 @@
+# Belt-and-suspenders: `files` allowlist in package.json is the primary guard.
+# This file prevents regressions if the allowlist is ever loosened.
+src/
+test/
+tests/
+__tests__/
+tsconfig*.json
+*.log
+.env
+.env.*
+*.tsbuildinfo
+.DS_Store

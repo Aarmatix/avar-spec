@@ -1,0 +1,55 @@
+{
+  "name": "@aarmos/avar-core",
+  "version": "1.10.0",
+  "description": "Reference implementation of the AVAR (Aarmos Verifiable Action Record) spec — canonical JSON, Ed25519 signature verification, hash-chain math, and bundle verification. Browser + Node, single runtime dep (fflate for .avar.zip parsing).",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "aarmos",
+    "avar",
+    "audit",
+    "hash-chain",
+    "ed25519",
+    "verifier"
+  ],
+  "license": "Apache-2.0",
+  "author": "Aarmatix LLC",
+  "homepage": "https://github.com/Aarmatix/avar-spec/tree/main/reference/js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Aarmatix/avar-spec.git",
+    "directory": "reference/js"
+  },
+  "bugs": {
+    "url": "https://github.com/Aarmatix/avar-spec/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "fflate": "^0.8.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsup": "^8.3.0",
+    "typescript": "^5.6.2"
+  }
+}
