@@ -5,7 +5,7 @@
 // they share this file.
 
 import { sha256Hex, computeEntryHash, computeStepHash, GENESIS_PREV_HASH } from "./hash";
-import { verifySignature, computeDeviceFingerprint, signedBodyOf } from "./signature";
+import { verifySignature, verifyRawSignature, computeDeviceFingerprint, signedBodyOf } from "./signature";
 import type {
   AvarBundle,
   AvarEntry,
@@ -126,6 +126,44 @@ export async function verifyBundle(bundle: AvarBundle): Promise<VerificationRepo
   // Step 7 — per-step chain.
   const perStepChainOk = await verifyAllStepChains(entries, issues);
 
+  // Step 7.5 — SPEC-ADDENDUM-1.5 B1 — agent-signature enforcement.
+  // When an entry carries `agentSignature`:
+  //   • if `agentIdentity.publicKey` is present → verify Ed25519 over UTF-8
+  //     bytes of the tail stepHash (or GENESIS_PREV_HASH). Mismatch is a
+  //     hard fail (`agent-signature-invalid`).
+  //   • if `publicKey` is absent → non-fatal warning
+  //     (`agent-key-unresolved`). Legacy pre-B1 receipts, and cases where
+  //     the pubkey lives out-of-band, still produce `valid-with-warnings`.
+  let agentSignaturesOk = true;
+  let agentSignaturesChecked = 0;
+  let agentSignaturesUnresolved = 0;
+  for (let i = 0; i < entries.length; i++) {
+    const e = entries[i];
+    if (typeof e.agentSignature !== "string") continue;
+    const pk = e.agentIdentity?.publicKey;
+    if (typeof pk !== "string" || pk.length === 0) {
+      agentSignaturesUnresolved++;
+      issues.push({
+        index: i,
+        kind: "agent-key-unresolved",
+        detail: "agentSignature present but agentIdentity.publicKey missing.",
+      });
+      continue;
+    }
+    const tail = tailStepHash(e);
+    const tailBytes = new TextEncoder().encode(tail);
+    const ok = await verifyRawSignature(tailBytes, e.agentSignature, pk);
+    agentSignaturesChecked++;
+    if (!ok) {
+      agentSignaturesOk = false;
+      issues.push({
+        index: i,
+        kind: "agent-signature-invalid",
+        detail: `entry ${i}: agentSignature does not verify against agentIdentity.publicKey.`,
+      });
+    }
+  }
+
   // Step 8 — chain head.
   const chainHead = computeChainHead(entries);
 
@@ -136,11 +174,12 @@ export async function verifyBundle(bundle: AvarBundle): Promise<VerificationRepo
     !chainOk ||
     !perStepChainOk ||
     !signaturesOk ||
-    !fingerprintsOk;
+    !fingerprintsOk ||
+    !agentSignaturesOk;
 
   const verdict: VerificationReport["verdict"] = anyHardFail
     ? "invalid"
-    : unsignedCount > 0 || unchainedCount > 0
+    : unsignedCount > 0 || unchainedCount > 0 || agentSignaturesUnresolved > 0
       ? "valid-with-warnings"
       : "valid";
 
@@ -151,6 +190,9 @@ export async function verifyBundle(bundle: AvarBundle): Promise<VerificationRepo
     perStepChainOk,
     signaturesOk,
     fingerprintsOk,
+    agentSignaturesOk,
+    agentSignaturesChecked,
+    agentSignaturesUnresolved,
     entryCount,
     signedCount,
     unsignedCount,
@@ -159,6 +201,15 @@ export async function verifyBundle(bundle: AvarBundle): Promise<VerificationRepo
     issues,
     verdict,
   };
+}
+
+function tailStepHash(e: AvarEntry): string {
+  const steps = Array.isArray(e.steps) ? e.steps : [];
+  for (let i = steps.length - 1; i >= 0; i--) {
+    const h = steps[i]?.stepHash;
+    if (typeof h === "string" && h.length > 0) return h;
+  }
+  return GENESIS_PREV_HASH;
 }
 
 async function verifyAllStepChains(

@@ -18,6 +18,7 @@ export type AarmosErrorCode =
   | "FINGERPRINT_MISMATCH"
   | "CHAIN_BROKEN"
   | "STEP_CHAIN_BROKEN"
+  | "AGENT_SIGNATURE_INVALID"
   | "MANIFEST_INVALID"
   // File I/O (CLI/bridge only)
   | "FILE_NOT_FOUND"
@@ -102,6 +103,11 @@ export const AARMOS_ERROR_TEMPLATES: Record<AarmosErrorCode, Omit<AarmosError, "
     hint: "A decision or tool step was tampered with. The affected entry index is in the issues list.",
     docsUrl: VERIFY_URL,
   },
+  AGENT_SIGNATURE_INVALID: {
+    message: "One or more entries carry an agentSignature that does not verify against the declared agent public key.",
+    hint: "The receipt claims a specific agent produced it, but the signature over the tail step hash is wrong. Treat as untrusted. See `aarmos identity` for rotation / recovery.",
+    docsUrl: VERIFY_URL,
+  },
   MANIFEST_INVALID: {
     message: "manifest.json is missing required fields or uses an unsupported format.",
     hint: "Re-export the bundle from the CLI — do not edit manifest.json by hand.",
@@ -154,6 +160,7 @@ export function classifyReport(report: {
   fingerprintsOk: boolean;
   chainOk: boolean;
   perStepChainOk: boolean;
+  agentSignaturesOk?: boolean;
   verdict: "valid" | "invalid" | "valid-with-warnings";
   issues: { kind: string; detail?: string }[];
 }): AarmosError | null {
@@ -163,6 +170,7 @@ export function classifyReport(report: {
   if (!report.fingerprintsOk) return aarmosError("FINGERPRINT_MISMATCH");
   if (!report.chainOk) return aarmosError("CHAIN_BROKEN");
   if (!report.perStepChainOk) return aarmosError("STEP_CHAIN_BROKEN");
+  if (report.agentSignaturesOk === false) return aarmosError("AGENT_SIGNATURE_INVALID");
   if (!report.formatOk) {
     const specIssue = report.issues.find((i) => i.kind === "spec-version-mismatch");
     if (specIssue) {

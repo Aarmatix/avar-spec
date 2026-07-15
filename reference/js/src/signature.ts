@@ -56,6 +56,35 @@ export async function verifySignature(
   }
 }
 
+/**
+ * Verify an Ed25519 signature over arbitrary bytes (no canonicalization).
+ * Used by SPEC-ADDENDUM-1.5 B1 to verify `agentSignature` — a signature
+ * over the UTF-8 bytes of the tail stepHash string. Never throws.
+ */
+export async function verifyRawSignature(
+  message: Uint8Array,
+  signatureB64u: string,
+  publicKeyB64u: string,
+): Promise<boolean> {
+  try {
+    const raw = b64uDecode(publicKeyB64u);
+    const key = await getSubtle().importKey("raw", raw as BufferSource, "Ed25519", false, [
+      "verify",
+    ]);
+    // `agentSignature` is emitted as standard base64 by the browser recorder
+    // (btoa over the raw signature bytes). Accept both base64 and base64url.
+    const sig = b64uDecode(signatureB64u);
+    return await getSubtle().verify(
+      "Ed25519",
+      key,
+      sig as BufferSource,
+      message as BufferSource,
+    );
+  } catch {
+    return false;
+  }
+}
+
 /** Compute the 12-hex device fingerprint per spec §3.2. */
 export async function computeDeviceFingerprint(publicKeyB64u: string): Promise<string> {
   const hex = await sha256Hex(utf8(publicKeyB64u));

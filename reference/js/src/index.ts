@@ -12,6 +12,7 @@ export {
 } from "./hash";
 export {
   verifySignature,
+  verifyRawSignature,
   computeDeviceFingerprint,
   signedBodyOf,
 } from "./signature";
@@ -22,6 +23,18 @@ export {
   type ChainReplayReport,
   type ReplayMismatch,
 } from "./replay";
+export {
+  SCENARIO_SCHEMA,
+  buildScenario,
+  serializeScenario,
+  parseScenario,
+  replayScenario,
+  type Scenario,
+  type ScenarioEdit,
+  type ScenarioReport,
+  type StepDiff,
+  type EntryDiff,
+} from "./scenarios";
 export {
   type AarmosError,
   type AarmosErrorCode,
@@ -93,5 +106,17 @@ export {
   type InviteRejectReason,
   type TrustedIssuerKey,
 } from "./invite";
+// SPEC-ADDENDUM-1.9 — receipt governance-chain verifier.
+export {
+  verifyGovernance,
+  governanceFingerprint,
+  type GovernanceManifestInput,
+  type GovernanceReport,
+  type EntryGovernanceReport,
+  type GovernanceVerdict,
+  type VerifyGovernanceOptions,
+} from "./governance";
+
+
 
 

@@ -116,7 +116,7 @@ async function makeChainedSteps(): Promise<TraceStep[]> {
   return steps;
 }
 
-// ---------- bundle builder (Node-only, mirrors src/lib/avar/bundle.ts) ----------
+// ---------- bundle builder (Node-only, mirrors the recorder's bundle writer) ----------
 
 async function buildBundleBytes(entries: AvarEntry[], overrides?: {
   specVersion?: string;

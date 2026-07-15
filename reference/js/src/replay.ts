@@ -1,4 +1,4 @@
-// Chain-Reproducing Replay (Moat Layer P2B.2).
+// Chain-Reproducing Replay: recomputes stepHash / entryHash from stored inputs and compares to the sealed chain.
 //
 // Given an AvarBundle, re-derive every stepHash and entryHash purely from
 // the recorded bodies and assert head-parity with the manifest. This proves

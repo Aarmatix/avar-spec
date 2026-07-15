@@ -13,7 +13,7 @@ Reference implementation of the [AVAR specification](https://github.com/Aarmatix
 **Normative.** Consumed by:
 - The Aarmos PWA at [`/trust/verify`](https://www.aarmos.io/trust/verify) (browser drop-zone).
 - The `aarmos verify` CLI in [`@aarmos/cli`](https://www.npmjs.com/package/@aarmos/cli).
-- The internal recorder in `src/lib/avar/` (chain + signature production).
+- The Aarmos recorder (chain + signature production, closed source).
 
 All three call the same `verifyBundle()`. Divergence between them is guarded by the golden fixtures in [`test/fixtures/`](./test/fixtures/) — see spec §9.
 

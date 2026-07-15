@@ -10,7 +10,7 @@
 //   3. verifyConsistencyProof() — pure, WebCrypto, browser + Node safe
 //   4. checkAnchorAgainstLog()  — glue for `avar verify --check-log`
 //
-// Non-goals (deferred, tracked in docs/roadmap/moat-layers.md §2A):
+// Non-goals for this module (out of scope here, may be addressed in future spec revisions):
 //   - Verifying the STH signature against Rekor's public key (needs ECDSA
 //     P-256 + Sigstore signed-note parser; landing in the browser verifier
 //     slice). We surface `checkpointSignatureVerified: false` with a clear
