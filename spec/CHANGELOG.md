@@ -5,7 +5,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [1.1] — 2026-07-07
 
-Wave 1.2 — Human Oversight Control. Additive, backward-compatible with `avar/1.0-rc1`; verifiers built for `1.0` accept `1.1` bundles per §10.
+`avar/1.1` — Human Oversight Control. Additive, backward-compatible with `avar/1.0-rc1`; verifiers built for `1.0` accept `1.1` bundles per §10.
 
 ### Added
 - `DecisionStep.decision` broadened to `string` (open-ended). Verifiers MUST treat unknown values as opaque data. Reserved additive verdicts introduced by `1.1`: `KILL`, `KILL_REVERT`.

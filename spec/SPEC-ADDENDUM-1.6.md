@@ -1,7 +1,7 @@
-# SPEC ADDENDUM 1.6 — Signed Trust Lists (Track 5.0)
+# SPEC ADDENDUM 1.6 — Signed Trust Lists
 
 Status: **Ships in `@aarmos/cli@0.38.0`, browser 2026-07-15.**
-Depends on: SPEC-ADDENDUM-1.5 §Track 4.0 (DSSE envelope, in-toto Statement).
+Depends on: SPEC-ADDENDUM-1.5 (DSSE envelope, in-toto Statement).
 
 ## Motivation
 
@@ -12,7 +12,7 @@ turns that per-device chore into a distributable artifact: one signed
 
 ## Wire format
 
-Trust lists reuse the **DSSE envelope** from Track 4.0 (`attest/1.0`,
+Trust lists reuse the **DSSE envelope** from SPEC-ADDENDUM-1.5 (`attest/1.0`,
 `payloadType: application/vnd.in-toto+json`). The only new wire is the
 `predicateType`:
 
@@ -92,7 +92,7 @@ An envelope is `ok` iff **all** of:
 Failure codes: `ATTEST_SIG_INVALID`, `TRUSTLIST_WRONG_PREDICATE`,
 `TRUSTLIST_MALFORMED`, `TRUSTLIST_SUBJECT_MISMATCH`, `TRUSTLIST_EXPIRED`.
 
-## Out of scope (Track 5.1)
+## Out of scope
 
 - HTTP subscription / registry fetch (`aarmos trust list subscribe <url>`).
 - Transitive web-of-trust.

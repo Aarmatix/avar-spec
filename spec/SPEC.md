@@ -1,7 +1,7 @@
 # AVAR — Aarmos Verifiable Action Record
 
 **Version:** `avar/1` (spec revision `1.1`)
-**Status:** Release Candidate — subject to change until `1.0` GA. Minor revision `1.1` (Wave 1.2 additions) is backward-compatible with `1.0-rc1`.
+**Status:** Release Candidate — subject to change until `1.0` GA. Minor revision `1.1` (Human Oversight additions) is backward-compatible with `1.0-rc1`.
 **License:** CC-BY-4.0 (see `LICENSE`).
 **Stewardship:** Aarmatix LLC stewards versions `1.x`. A formal RFC process opens with version `2`.
 
@@ -327,7 +327,7 @@ Custom tags MUST use the `x-` prefix (e.g. `x-org:internal-policy-42`). Adding a
 
 ### `avar/1.1` additions
 
-Minor revision `avar/1.1` (Wave 1.2 — Human Oversight Control) added:
+Minor revision `avar/1.1` (Human Oversight Control) added:
 
 - `DecisionStep.decision` is a `string` open-ended value. Verifiers MUST treat unknown values as opaque data. The reserved additive values introduced by `1.1` are `KILL` (kill-switch engaged) and `KILL_REVERT` (kill-switch disengaged). Classic policy verdicts (`ALLOW | MODIFY | DENY | STEP_UP | DEFER`) are unchanged.
 - `DecisionStep.killScope?: "all" | "writes" | "destructive"` — scope stamped on `KILL` / `KILL_REVERT` entries.

@@ -1,4 +1,4 @@
-// AVAR canonical structural diff (Wave 4.5, `avar-core@1.1.0`).
+// AVAR canonical structural diff (`avar-core@1.1.0`).
 //
 // Pure, zero-dep. Operates on already-parsed JSON values. Uses the same
 // canonical form as signature + hash paths (see canonicalize.ts) so that

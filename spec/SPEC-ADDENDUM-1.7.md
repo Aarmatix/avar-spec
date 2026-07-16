@@ -1,13 +1,13 @@
-# SPEC ADDENDUM 1.7 — Trust Manifests & Subscriptions (Track 5.1a / 5.1c)
+# SPEC ADDENDUM 1.7 — Trust Manifests & Subscriptions
 
 Status: **DRAFT — implementation gated on ADR-0002 acceptance.**
-Depends on: SPEC-ADDENDUM-1.5 §Track 4.0 (DSSE + in-toto Statement), SPEC-ADDENDUM-1.6 (Signed Trust Lists).
+Depends on: SPEC-ADDENDUM-1.5 (DSSE + in-toto Statement), SPEC-ADDENDUM-1.6 (Signed Trust Lists).
 Governs: `trustmanifest/v1` wire format, subscription records, refresh semantics.
 Governed by: **ADR-0002 · The Trust Invariant (T-INV)** — no derived trust; explicit choice; monotonic updates; reproducible state.
 
 ## Motivation
 
-Track 5.0 (`trustlist/v1`) is a one-shot artifact: export a signed list, import it once, done. Real deployments need a way to say "keep this list fresh" without letting the network silently expand the trust set.
+The prior `trustlist/v1` addendum is a one-shot artifact: export a signed list, import it once, done. Real deployments need a way to say "keep this list fresh" without letting the network silently expand the trust set.
 
 Addendum 1.7 introduces two changes:
 
@@ -18,7 +18,7 @@ Addendum 1.7 introduces two changes:
 
 ## Wire format
 
-Trust manifests reuse the **DSSE envelope** from Track 4.0
+Trust manifests reuse the **DSSE envelope** from SPEC-ADDENDUM-1.5
 (`payloadType: application/vnd.in-toto+json`). The new `predicateType` is:
 
 ```
@@ -100,7 +100,7 @@ Input: subscription record `S`, freshly fetched envelope `E`.
 
 All rejects are non-destructive: the previously accepted entries and sequence stand.
 
-## CLI surface (Track 5.1a / 5.1c)
+## CLI surface
 
 - `aarmos trust manifest subscribe <url> --issuer <fingerprint> [--label <name>]`
 - `aarmos trust manifest list`

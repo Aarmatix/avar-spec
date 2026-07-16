@@ -7,7 +7,7 @@
 
 ## Context
 
-Track 5.1a shipped `trustmanifest/v1`: a DSSE-signed publisher list an
+The trust-manifest addendum shipped `trustmanifest/v1`: a DSSE-signed publisher list an
 operator subscribes to. Verification binds a subscription to the
 fingerprint of the **key** that signed the first accepted manifest. That
 works, but conflates two orthogonal things:
@@ -19,7 +19,7 @@ works, but conflates two orthogonal things:
 
 If we treat the key as the identity, every legitimate rotation looks like
 a compromise: subscribers see `issuer_mismatch` and must re-subscribe from
-scratch, losing sequence state. Track 6.0 (receipt federation) will
+scratch, losing sequence state. Planned receipt-federation work will
 reference these roots by name in receipts; that reference has to survive
 routine rotations or the audit trail breaks.
 

@@ -1,15 +1,15 @@
 # ADR-0002 · No Transitive Trust — The Trust Invariant (T-INV)
 
 - **Date:** 2026-07-15
-- **Status:** DECIDED — Transitive trust (Track 5.1b) rejected. Subscribe URLs (5.1a) and CLI-driven refresh (5.1c) approved under the constraints below.
+- **Status:** DECIDED — Transitive trust rejected. Subscribe URLs and CLI-driven refresh approved under the constraints below.
 - **Owners:** Runtime + Access Model WG
 - **Related:** internal design notes (not public).
 
 ## Context
 
-Track 5.0 shipped signed trust lists: a workspace can export a `.trustlist.json` file containing publisher pins, and another workspace can verify and import them. Every entry is an explicit human decision.
+The prior signed-trust-list milestone shipped: a workspace can export a `.trustlist.json` file containing publisher pins, and another workspace can verify and import them. Every entry is an explicit human decision.
 
-Track 5.1 proposed three follow-ons:
+A follow-on effort proposed three options:
 - **5.1a — Subscribe URLs.** A trust list is fetched over HTTPS from a URL the operator explicitly chose. Content is still DSSE-signed and issuer-pinned; only the transport is remote.
 - **5.1b — Transitive trust.** If Authority A signs a trust list that vouches for Authority B, then B's own trust lists become trusted automatically. A web of trust with derived edges.
 - **5.1c — Auto-refresh.** Periodic re-fetch of subscribed lists (5.1a) with rollback protection.
@@ -29,7 +29,7 @@ Concretely:
    - The subscription record itself (URL + issuer fingerprint + last accepted sequence) is stored locally and is part of the reproducible trust state.
 3. **5.1c — Auto-refresh: APPROVED for CLI/CI only.** `aarmos trust manifest refresh` is a foreground command suitable for cron and CI. No PWA background timers, no service-worker refreshers. The browser surfaces "N subscriptions, last refreshed T" and a manual "Refresh" button.
 
-Vocabulary shift accompanying this ADR: what Track 5.0 called a **trust list** signed by a **publisher** is generalized in SPEC-ADDENDUM-1.7 into a **trust manifest** issued by a **trust authority**, with an `authority.id` + monotonic `sequence` for rollback protection. Existing `trustlist/v1` artifacts remain valid; `trustmanifest/v1` is the forward format.
+Vocabulary shift accompanying this ADR: what the prior milestone called a **trust list** signed by a **publisher** is generalized in SPEC-ADDENDUM-1.7 into a **trust manifest** issued by a **trust authority**, with an `authority.id` + monotonic `sequence` for rollback protection. Existing `trustlist/v1` artifacts remain valid; `trustmanifest/v1` is the forward format.
 
 ## Consequences
 

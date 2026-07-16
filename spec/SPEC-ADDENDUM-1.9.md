@@ -81,27 +81,27 @@ Verifiers gain three OPTIONAL hard reject codes and one advisory:
   matching manifest was supplied. Verifier reports `valid-with-warnings`
   unless the caller opts into strict mode (`--fail-on-ungoverned`).
 
-**Rule G1 (back-compat).** A receipt WITHOUT a `governance` block verifies
+**GOV-1 (back-compat).** A receipt WITHOUT a `governance` block verifies
 exactly as before, whether or not manifests are supplied. No forced
 re-issuance.
 
-**Rule G2 (single authority per receipt).** A receipt names at most one
+**GOV-2 (single authority per receipt).** A receipt names at most one
 governing authority. ADR-0002 stands — no transitive trust; verifiers do
 not walk chains between authorities.
 
-**Rule G3 (local-first, ADR-0004).** Verification is a pure function of
+**GOV-3 (local-first, ADR-0004).** Verification is a pure function of
 `(receipt, manifests[])`. Verifiers MUST NOT fetch. No registry lookup,
 no discovery, no Aarmos-hosted service. The operator (or auditor) is
 responsible for supplying the authority manifest they wish to verify
 against.
 
-**Rule G4 (multi-authority reports).** When multiple manifests are
+**GOV-4 (multi-authority reports).** When multiple manifests are
 supplied, the verifier matches each receipt to the manifest whose
 `authority.id` equals `governance.authorityId`. Receipts whose authority
 is not represented in any supplied manifest yield the
 `governance-unverified` advisory (never a hard fail unless strict mode).
 
-**Rule G5 (monotonic sequence at publish).** Manifest sequence MUST be
+**GOV-5 (monotonic sequence at publish).** Manifest sequence MUST be
 monotonically increasing at publish. Authoring tools (`aarmos authority
 publish`) reject any sequence `<= last emitted` for a given authority.
 Verifiers that maintain a local history (e.g. subscription state) MUST

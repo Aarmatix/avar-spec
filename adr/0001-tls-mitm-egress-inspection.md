@@ -1,4 +1,4 @@
-# ADR-0001 · Wave 3.9 TLS-MITM Egress Inspection
+# ADR-0001 · TLS-MITM Egress Inspection (Rejected)
 
 - **Date:** 2026-07-15
 - **Status:** DECIDED — Option 1 (Adapter-First, Hostname-Only Proxy) approved. Option 2 (opt-in MITM) and Option 3 (default MITM) rejected.
@@ -7,7 +7,7 @@
 
 ## Context
 
-To generate rich AVAR receipts and enforce content-aware policy obligations, Aarmos benefits from visibility into agent payload contents (prompts, tool arguments, model responses). A prior proposal (Wave 3.9) suggested an opt-in TLS Man-In-The-Middle (MITM) proxy: install a locally-generated root CA, terminate TLS at the local daemon, inspect the plaintext, then re-encrypt on the way out.
+To generate rich AVAR receipts and enforce content-aware policy obligations, Aarmos benefits from visibility into agent payload contents (prompts, tool arguments, model responses). A prior proposal suggested an opt-in TLS Man-In-The-Middle (MITM) proxy: install a locally-generated root CA, terminate TLS at the local daemon, inspect the plaintext, then re-encrypt on the way out.
 
 Our first-class client adapters — `@aarmos/adapter-mcp`, `@aarmos/adapter-openapi`, `@aarmos/adapter-deeplink`, and the LLM adapters used in `examples/langchain`, `examples/crewai`, `examples/autogen` — already capture prompt/response telemetry pre-encryption for all traffic that flows through them. The share of real-world agent traffic that uses adapters vs. raw HTTPS is **not yet measured** (we have zero users). The MITM path additionally carries three concrete costs: SDK cert-pinning breakage, 2026 regulatory exposure (post-EU AI Act Art. 14; wiretap-adjacent disclosure risk), and a permanent tension with our locked "local-first / Switzerland" positioning.
 
@@ -24,7 +24,7 @@ Our first-class client adapters — `@aarmos/adapter-mcp`, `@aarmos/adapter-open
 - No root CA install required to get value from Aarmos. Preserves Switzerland/local-first invariants.
 - No wiretap-adjacent legal surface. No cert-pinning breakage for SDKs (OpenAI, Anthropic, Stripe, etc.).
 - Incentive alignment: users get high-fidelity receipts by using our adapters. Ergonomics, not coercion.
-- Wave 3.9 is closed, not parked. Wave 3.10 (Contracts) and downstream waves unblock cleanly.
+- The TLS-MITM proposal is closed, not parked. Downstream contracts work and later milestones unblock cleanly.
 
 **Negative / accepted**
 - Any HTTPS call from user agent code that bypasses our adapters produces a low-fidelity receipt: `{ fqdn, timestamp, bytes, receipt_id, tool_id? }` and nothing about the payload.

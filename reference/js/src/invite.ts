@@ -131,7 +131,7 @@ export interface InviteVerifyOptions {
    */
   callerAudience?: { kind: "agent" | "tenant"; value: string };
   /**
-   * Optional Rule D1 (attenuation) check: pass the issuer's own scope so
+   * Optional delegation-attenuation check: pass the issuer's own scope so
    * the verifier can confirm the invite doesn't exceed it.
    */
   issuerParentScope?: ReadonlyArray<{ action: string; resource: string }>;

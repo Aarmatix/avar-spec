@@ -54,9 +54,9 @@ export type DecisionStep = {
    * Decision label. `ALLOW | MODIFY | DENY | STEP_UP | DEFER` are the
    * classic policy decisions (AARM Core R4). Minor spec revisions add
    * sources:
-   *  - `KILL` (Wave 1.2, kill-switch)
-   *  - `ROTATE | REVOKE` (Wave 1.3, vault)
-   *  - `FIRST_CONTACT` (Wave 1.4, egress)
+   *  - `KILL` (kill-switch)
+   *  - `ROTATE | REVOKE` (vault)
+   *  - `FIRST_CONTACT` (egress)
    *  - future additive values.
    * Verifiers MUST treat unknown decision strings as opaque data.
    */
@@ -70,14 +70,14 @@ export type DecisionStep = {
   bundleState?: "unknown" | "none" | "valid" | "grace" | "invalid";
   killSwitchAt?: boolean;
   /**
-   * Kill-switch scope at the time of the decision (Wave 1.2, `avar/1.1`).
+   * Kill-switch scope at the time of the decision (`avar/1.1`).
    * Present on `decision: "KILL"` entries produced by the kill-switch;
    * MAY appear on other decisions as advisory context. Verifiers treat
    * unknown values as opaque data.
    */
   killScope?: "all" | "writes" | "destructive";
   /**
-   * MODIFY provenance (avar/1.5, Wave 3.11 · AARM R4). Present on
+   * MODIFY provenance (avar/1.5 · AARM R4). Present on
    * `decision: "MODIFY"` entries. `argsBeforeHash` and `argsAfterHash`
    * are SHA-256 hex prefixes of the canonical-JSON serialization of
    * the pre- and post-transform arguments. `modifyReasons` are short
@@ -88,7 +88,7 @@ export type DecisionStep = {
   argsAfterHash?: string;
   modifyReasons?: string[];
   /**
-   * DEFER provenance (avar/1.5, Wave 3.11 · AARM R4). Present on
+   * DEFER provenance (avar/1.5 · AARM R4). Present on
    * `decision: "DEFER"` entries. `deferralId` uniquely identifies the
    * suspended action; `deferReason` is a short machine-readable code;
    * `resolutionMethods` enumerates permitted resolution paths (e.g.
@@ -182,7 +182,7 @@ export type AvarEntry = {
     builderPubkey?: string;
   };
   /**
-   * Declared agent intent (avar/1.5, Wave 3.11 · AARM R3). Short
+   * Declared agent intent (avar/1.5 · AARM R3). Short
    * natural-language string stated by the caller at run start describing
    * what the agent is trying to accomplish. Policy evaluation MAY reference
    * this via `ctx.intent`. `intentHash` is the SHA-256 hex prefix of the

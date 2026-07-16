@@ -26,7 +26,7 @@ Coordinated bump only; no code changes vs `1.8.0-rc.1`.
   over canonical JSON (sorted keys, no whitespace).
 - **`verifyInvite(token, { trustedKeys, now, connector })`** — offline
   verification: signature, `nbf` / `exp`, audience, connector match,
-  scope ⊆ issuer grants (Rule D1 · attenuation), optional Rekor anchor.
+  scope ⊆ issuer grants (delegation attenuation invariant), optional Rekor anchor.
   Returns `{ ok, reason, scope, obligations }`.
 - **`inviteBodyDigest`** — canonical digest helper reused by CLI and
   the bundle verifier so redemption records cross-reference by hash.
