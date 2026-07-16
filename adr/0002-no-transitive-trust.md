@@ -3,7 +3,7 @@
 - **Date:** 2026-07-15
 - **Status:** DECIDED — Transitive trust (Track 5.1b) rejected. Subscribe URLs (5.1a) and CLI-driven refresh (5.1c) approved under the constraints below.
 - **Owners:** Runtime + Access Model WG
-- **Related:** `docs/avar/SPEC-ADDENDUM-1.6.md` (Trust Lists), `docs/avar/SPEC-ADDENDUM-1.7.md` (Trust Manifests, forthcoming), `mem://strategy/positioning-locked-v1`, `mem://strategy/marketing-and-moat`, `mem://product/moat`
+- **Related:** internal design notes (not public).
 
 ## Context
 
