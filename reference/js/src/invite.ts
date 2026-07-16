@@ -205,7 +205,7 @@ export async function verifyInvite(
       `invite is for ${invite.connector.id}, caller is ${opts.connector.id}`,
     );
 
-  // 7. Rule D1 attenuation.
+  // 7. Attenuation check — child scope must be a subset of issuer scope.
   if (opts.issuerParentScope && !subsetOf(invite.scope, opts.issuerParentScope))
     return fail("attenuation_break", "invite scope exceeds issuer's own scope");
 
