@@ -144,7 +144,7 @@ async function main() {
     assert.equal(r.reason, "connector_mismatch");
   });
 
-  await t("Rule D1 attenuation break rejects", async () => {
+  await t("attenuation break rejects", async () => {
     const r = await verifyInvite(signed!, {
       trustedKeys: trusted,
       callerAudience: { kind: "agent", value: "agent_a" },
