@@ -1,6 +1,6 @@
 # RFC-0008: Evidence Model
 
-**Status:** Draft
+**Status:** Amended
 **Target:** AVAR 1.10
 **License:** CC BY 4.0
 **Authors:** AVAR Working Group
@@ -15,7 +15,7 @@ process metadata but not application intent.
 
 Verifiers and auditors cannot assess trust without knowing **what a producer
 actually observed** versus what it inferred or omitted. This RFC formalizes
-that distinction.
+that distinction — and its limits.
 
 ## 2. Terminology
 
@@ -26,30 +26,57 @@ The wire field name `entries[]` is retained for compatibility (§7).
 **Producer.** Any component that emits AVAR evidence. Producers MAY be network
 proxies, SDK wrappers, OS agents, or application-layer instrumentation.
 
-**Depth.** The observation layer at which evidence was captured (§3).
+**Evidence type.** The observation class at which evidence was captured (§3).
+These are **classes, not depths** — a receipt MAY carry any subset (e.g. an OS
+audit log emits `action` evidence with no transport or protocol context).
 
 **Source.** The producer category that captured the evidence (§4).
 
 **Claims.** A boolean vocabulary declaring which evidence fields are directly
 observed versus inferred or absent (§5).
 
-## 3. Depth
+## 3. Scope Boundary
 
-Every evidence object MUST declare a `depth` field with exactly one of:
+AVAR standardizes **verifiable evidence of autonomous execution**. It does
+not standardize autonomy architectures, planning models, or governance
+workflows.
+
+- AVAR records observable evidence.
+- AVAR does not infer cognition.
+- Intent, goals, and reasoning belong to producers.
+- Governance belongs to producers and runtimes.
+
+> *AVAR records verifiable evidence of autonomous execution. Aarmos interprets
+> that evidence into governance concepts such as intent, goals, policies,
+> workflows, and compliance.*
+
+Two interoperability rules apply to every producer and verifier and MUST NOT
+be broken by future revisions:
+
+1. *Conservative in what you emit, liberal in what you accept.*
+2. *Receipts SHOULD remain valid even when consumers do not understand every
+   evidence attribute.*
+
+## 4. Evidence Type
+
+Every evidence object SHOULD declare an `evidence_type` field with one of:
 
 | Value | Meaning |
 |---|---|
 | `transport` | Observed at the network/connection layer (e.g., DNS, TCP, TLS handshake). Destination hostname visible; payload not decoded. |
 | `protocol` | Observed at the application protocol layer (e.g., HTTP method + path, MCP frame headers). Structural fields visible; semantic payload may not be. |
 | `action` | Observed at the API-call/tool-invocation layer. Call name and arguments visible. |
-| `intent` | Observed at the agent-reasoning layer. Prompt/plan visible. |
 
-Depth is monotonic: `intent` producers MAY also emit `action`-depth evidence.
-Verifiers MUST NOT assume a producer sees deeper than declared.
+`intent` is **outside the scope of AVAR**. Producers MUST NOT emit
+`evidence_type: "intent"`. Verifiers encountering it in legacy or third-party
+receipts MUST warn and accept (§7).
 
-## 4. Source
+Unknown `evidence_type` values MUST cause verifier warnings but MUST NOT cause
+rejection. This preserves forward compatibility with future extensions.
 
-Every evidence object MUST declare a `source` field with exactly one of:
+## 5. Source
+
+Every evidence object SHOULD declare a `source` field. Registered values:
 
 | Value | Meaning |
 |---|---|
@@ -59,12 +86,12 @@ Every evidence object MUST declare a `source` field with exactly one of:
 | `application` | Application-layer instrumentation inside the agent host |
 | `broker` | Message broker or event bus between agent components |
 
-Additional values MUST be registered via RFC. Unknown values MUST cause
-verifier warnings but not rejection.
+Additional values MAY be registered via RFC. Unknown values MUST cause
+verifier warnings but MUST NOT cause rejection.
 
-## 5. Claims Block
+## 6. Claims Block
 
-Every evidence object MUST include a `claims` object with the following
+Every evidence object SHOULD include a `claims` object with the following
 boolean fields:
 
 ```json
@@ -89,47 +116,73 @@ boolean fields:
 Verifiers MUST reject evidence where `claims.X == false` but field `X` is
 populated with a non-null value.
 
-## 6. Depth × Claims Coherence
+## 7. Evidence Type × Claims Coherence
 
-Producers MUST NOT declare claims inconsistent with their depth:
+Producers MUST NOT declare claims inconsistent with their evidence type:
 
-| Depth | Maximum claims allowed |
+| Evidence type | Maximum claims allowed |
 |---|---|
 | `transport` | `destination`, `session_binding` |
 | `protocol` | above + `method`, `path_or_call`, `response_status` |
 | `action` | above + `arguments`, `actor_identity` |
-| `intent` | all fields |
 
 Verifiers MUST reject evidence violating this table with error `E-COHERENCE`.
+For unknown evidence types (see §4), coherence checks are skipped and the
+verifier emits a warning.
 
-## 7. Wire Compatibility
+## 8. Wire Compatibility
 
-The receipt JSON retains `entries[]` at the top level. Each entry object gains
-three required fields: `depth`, `source`, `claims`. Receipts from AVAR ≤1.9
-MUST be accepted by 1.10 verifiers with implicit defaults:
+The receipt JSON retains `entries[]` at the top level. Each entry object
+SHOULD carry `evidence_type`, `source`, and `claims`.
 
-- `depth: "action"` (conservative — most legacy producers wrapped SDKs)
+**Legacy field name.** The pre-amendment name for `evidence_type` was `depth`.
+Verifiers MUST accept `depth` as a synonym for `evidence_type` with a
+deprecation warning. Producers MUST NOT emit `depth` on AVAR 1.10+ receipts.
+
+**Legacy values.** `depth: "intent"` MUST be accepted with a warning per §4.
+
+**Pre-1.10 receipts.** Receipts from AVAR ≤ 1.9 MUST be accepted by 1.10
+verifiers with implicit defaults:
+
+- `evidence_type: "action"` (conservative — most legacy producers wrapped SDKs)
 - `source: "application"`
 - `claims`: all `true` for fields present, all `false` for absent
 
 Legacy receipts MUST be marked `legacy: true` in verifier output.
 
-## 8. Error Codes
+**Unknown extension attributes.** Verifiers MUST NOT reject an entry solely
+because it carries additional attributes they do not recognize. Such
+attributes are opaque data (§3, rule 2).
 
-- `E-DEPTH-INVALID` — `depth` value not in §3
-- `E-SOURCE-INVALID` — `source` value not in §4 (warning, not rejection)
-- `E-CLAIMS-MISSING` — `claims` object absent on 1.10+ evidence
+## 9. Error Codes
+
+- `E-EVIDENCE-TYPE-INVALID` — `evidence_type` is missing on 1.10+ evidence
+  (warning-only if a legacy `depth` synonym is present)
+- `E-SOURCE-INVALID` — `source` value not in §5 (warning, not rejection)
+- `E-CLAIMS-MISSING` — `claims` object absent or malformed on 1.10+ evidence
 - `E-CLAIMS-CONTRADICTION` — field populated where `claims.X == false`
-- `E-COHERENCE` — claims exceed depth allowance per §6
+- `E-COHERENCE` — claims exceed evidence-type allowance per §7
 
-## 9. Security Considerations
+The pre-amendment code `E-DEPTH-INVALID` is retained as an alias of
+`E-EVIDENCE-TYPE-INVALID` for tooling compatibility.
 
-A malicious producer MAY over-claim (declare `depth: intent` while only
-observing transport). This RFC does not prevent lies; it makes them auditable.
-Verifiers and downstream consumers SHOULD cross-reference `depth`+`source`
-against known producer capabilities before granting trust.
+## 10. Security Considerations
 
-## 10. Reference Test Vectors
+A malicious producer MAY over-claim (declare `evidence_type: action` while
+only observing transport). This RFC does not prevent lies; it makes them
+auditable. Verifiers and downstream consumers SHOULD cross-reference
+`evidence_type` + `source` against known producer capabilities before
+granting trust.
+
+## 11. Reference Test Vectors
 
 Normative vectors ship in `Aarmatix/avar-conformance` under
-`vectors/rfc-0008/`.
+`vectors/rfc-0008/`, including:
+
+- One valid vector for each `evidence_type` value (`transport`, `protocol`,
+  `action`).
+- Legacy `depth` field accepted with deprecation warning.
+- Legacy `depth: "intent"` accepted with warning.
+- Unknown `evidence_type` value accepted with warning.
+- Unknown extension attribute — receipt still valid.
+- Emitter conformance: producers MUST NOT emit `intent`.
