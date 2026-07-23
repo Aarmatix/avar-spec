@@ -10,8 +10,8 @@
 | [`LICENSE`](./LICENSE) | CC-BY-4.0 for the specification text. |
 | [`CHANGELOG.md`](./CHANGELOG.md) | Spec revision history. |
 
-**Reference implementation** — [`packages/avar-core/`](../../packages/avar-core/).
-**CLI verifier** — `aarmos verify <bundle.zip>` (from [`packages/cli`](../../packages/cli/), published as `@aarmos/cli`).
+**Reference implementation** — [`@avar-standard/core`](https://www.npmjs.com/package/@avar-standard/core) (published from [`Aarmatix/avar`](https://github.com/Aarmatix/avar)).
+**CLI verifier** — `avar verify <bundle.zip>` — standalone binary via `brew install aarmatix/tap/avar`, or use `@aarmos/cli` for the full Aarmos runtime.
 **Browser verifier** — `/trust/verify` on any Aarmos install (offline, WebCrypto only).
 
 ## `aarmos verify` — exit codes and `--json` shape

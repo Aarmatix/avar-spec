@@ -62,7 +62,7 @@ canonicalize(v):
     return "{" + join(",", parts) + "}"
 ```
 
-> **Note.** The reference implementation in `packages/avar-core` is the normative tie-breaker for any ambiguity in this section. Verifiers SHOULD run the `unicode-edge` golden fixture (§9) as an acceptance test.
+> **Note.** The reference implementation in [`@avar-standard/core`](https://github.com/Aarmatix/avar) is the normative tie-breaker for any ambiguity in this section. Verifiers SHOULD run the `unicode-edge` golden fixture (§9) as an acceptance test.
 
 ---
 
@@ -338,7 +338,7 @@ Minor revision `avar/1.1` (Human Oversight Control) added:
 
 ## 9. Golden Fixtures (Normative)
 
-Conformant verifiers MUST pass all fixtures in `packages/avar-core/test/fixtures/`:
+Conformant verifiers MUST pass all fixtures in the AVAR conformance suite ([`Aarmatix/avar-conformance`](https://github.com/Aarmatix/avar-conformance)) as well as the reference-implementation fixtures in [`Aarmatix/avar` `packages/core/test/fixtures/`](https://github.com/Aarmatix/avar/tree/main/packages/core/test/fixtures):
 
 1. `empty` — zero entries.
 2. `single` — one signed entry, no steps.
@@ -363,4 +363,4 @@ Conformant verifiers MUST pass all fixtures in `packages/avar-core/test/fixtures
 
 Aarmatix LLC stewards AVAR `1.x`. Editorial changes, clarifications, and fixture additions are made by the steward at their discretion, with a `CHANGELOG.md` entry. Substantive protocol changes require a public RFC starting with `avar/2`.
 
-The spec text is licensed under CC-BY-4.0 (see `LICENSE`). The reference implementation in `packages/avar-core/` is licensed separately under the repository's LICENSE.
+The spec text is licensed under CC-BY-4.0 (see `LICENSE`). The reference implementation (`@avar-standard/core`, `@avar-standard/verify`) is licensed separately under Apache-2.0 in the [`Aarmatix/avar`](https://github.com/Aarmatix/avar) repository.

@@ -25,7 +25,7 @@ Concretely:
 1. Given the artifacts named by a verifier's public API — for example
    `(receipt, manifests[])` for `verifyGovernance`, or `(bundle)` for
    `verifyBundle` — the verdict is a pure function of the bytes on disk.
-2. The reference verifier (`@aarmos/avar-core`, and any binary or
+2. The reference verifier (`@avar-standard/core` / `@avar-standard/verify`, and any binary or
    browser bundle built from it) MUST NOT open a network socket, resolve
    DNS, or read process/user state to reach its verdict.
 3. Optional live checks (Rekor consistency proof, transparency-log
@@ -68,5 +68,5 @@ Concretely:
 - Reviews of any new spec addendum or verifier PR MUST answer:
   *"Can a stranger holding only the named artifacts reproduce this
   verdict with no network?"* A "no" is a rejection.
-- CI runs the `@aarmos/avar-core` test suites with network access
+- CI runs the `@avar-standard/*` test suites with network access
   denied (opt-in flags excepted).

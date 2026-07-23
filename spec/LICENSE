@@ -19,5 +19,6 @@ Under the following terms:
 Full license text: https://creativecommons.org/licenses/by/4.0/legalcode
 
 This license applies to the specification text only. The reference
-implementation in `packages/avar-core/` is licensed separately under the
-terms in the repository root LICENSE file.
+implementation (`@avar-standard/core`, `@avar-standard/verify`) lives in
+https://github.com/Aarmatix/avar and is licensed separately under
+Apache-2.0.
