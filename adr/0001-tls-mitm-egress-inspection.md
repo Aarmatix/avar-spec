@@ -33,12 +33,10 @@ Our first-class client adapters — `@aarmos/adapter-mcp`, `@aarmos/adapter-open
 
 ## Revisit Triggers
 
-This decision is reopened only if **either** condition is met:
-
-1. **Empirical bypass signal.** Live dogfooding shows >20% of critical agent tool-execution traffic bypasses our first-class adapters via raw HTTPS, measured across ≥1,000 recorded sessions from ≥5 distinct dogfood teams (aligned with the P1 exit criteria in `EGRESS-ROADMAP.md`).
-2. **Commercial signal.** A paying design partner makes payload-level DLP a contractual condition of the deal.
-
-Absent either signal, MITM stays off the roadmap.
+This decision is reopened only if adapter coverage proves insufficient in
+practice for governed traffic, or if a payload-level inspection obligation
+becomes a hard requirement that no adapter-mediated path can satisfy.
+Absent such a signal, TLS interception stays out of scope.
 
 ## Explicitly rejected alternatives
 
