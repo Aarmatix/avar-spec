@@ -11,7 +11,7 @@ for a slow, silent drift: introducing a hosted registry, a discovery
 endpoint, or an implicit "phone home" step that quietly makes the verifier
 depend on live Aarmos infrastructure.
 
-That drift would collapse the moat. The whole point of the artifacts is
+That drift would defeat the purpose of the artifacts. The whole point of the artifacts is
 that they are **testable evidence**, not access tokens to a hosted truth.
 
 ## Decision
