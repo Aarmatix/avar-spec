@@ -22,7 +22,7 @@ function walk(dir) {
     const full = join(dir, name);
     const s = statSync(full);
     if (s.isDirectory()) out.push(...walk(full));
-    else if (s.isFile() && SCAN_EXTS.some((e) => name.endsWith(e))) out.push(full);
+    else if (s.isFile() && name !== "ip-leak-tokens.json" && SCAN_EXTS.some((e) => name.endsWith(e))) out.push(full);
   }
   return out;
 }
