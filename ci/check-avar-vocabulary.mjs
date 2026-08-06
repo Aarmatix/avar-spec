@@ -4,7 +4,7 @@
 //   - Aarmatix/avar             (reference verifier)
 //   - Aarmatix/avar-conformance (test suite + vectors)
 //
-// Enforces mem://strategy/avar-publication-boundary.md (private).
+// Enforces the AVAR publication boundary.
 //
 // Usage:
 //   node scripts/check-avar-vocabulary.mjs                 (auto-detect repo)
