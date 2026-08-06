@@ -34,7 +34,7 @@ Vocabulary shift accompanying this ADR: what the prior milestone called a **trus
 ## Consequences
 
 **Positive**
-- Preserves the Sovereign moat. Operators can reason about "who can affect my trust set" by reading one directory.
+- Preserves sovereignty. Operators can reason about "who can affect my trust set" by reading one directory.
 - Matches how mature ecosystems handle roots: Sigstore/SLSA distribute explicit trust roots; browser CA stores are curated allowlists. We are in good company by refusing web-of-trust semantics.
 - Makes revocation tractable. A revoked authority stops mattering the moment its manifest is removed; there is no downstream graph to walk.
 - Compatible with air-gapped and CI-only deployments: `refresh` is a command, not a daemon.
