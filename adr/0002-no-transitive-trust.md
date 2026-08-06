@@ -27,7 +27,7 @@ Concretely:
    - Each subscription is bound at creation time to a specific issuer fingerprint. Refreshes that arrive signed by a different key are rejected, not auto-rotated.
    - Refreshes replace the previous manifest only if `sequence` is strictly greater than the last accepted value from the same `authority.id`. Rollback attempts are rejected and surfaced.
    - The subscription record itself (URL + issuer fingerprint + last accepted sequence) is stored locally and is part of the reproducible trust state.
-3. **5.1c — Auto-refresh: APPROVED for CLI/CI only.** `aarmos trust manifest refresh` is a foreground command suitable for cron and CI. No PWA background timers, no service-worker refreshers. The browser surfaces "N subscriptions, last refreshed T" and a manual "Refresh" button.
+3. **5.1c — Auto-refresh: APPROVED for CLI/CI only.** `aarmos trust manifest refresh` is a foreground command suitable for cron and CI. No browser background timers, no service-worker refreshers. The browser surfaces "N subscriptions, last refreshed T" and a manual "Refresh" button.
 
 Vocabulary shift accompanying this ADR: what the prior milestone called a **trust list** signed by a **publisher** is generalized in SPEC-ADDENDUM-1.7 into a **trust manifest** issued by a **trust authority**, with an `authority.id` + monotonic `sequence` for rollback protection. Existing `trustlist/v1` artifacts remain valid; `trustmanifest/v1` is the forward format.
 
@@ -40,7 +40,7 @@ Vocabulary shift accompanying this ADR: what the prior milestone called a **trus
 - Compatible with air-gapped and CI-only deployments: `refresh` is a command, not a daemon.
 
 **Negative / accepted**
-- Bootstrapping new publishers is a manual step per operator. This is intentional and matches the T1/T2 buyer's expectation (platform-eng, SRE, security).
+- Bootstrapping new publishers is a manual step per operator. This is intentional and matches the platform-engineering, SRE, and security buyer's expectation.
 - Multi-hop federation ("trust everything my industry consortium trusts") is not expressible in-product. If demand emerges, the consortium should publish a single curated manifest that each member subscribes to explicitly.
 
 ## Revisit triggers

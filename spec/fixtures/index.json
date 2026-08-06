@@ -1,0 +1,243 @@
+{
+  "spec": "AVAR 1.0 (Normative)",
+  "specVersion": "avar/1",
+  "corpusVersion": "1.0.0",
+  "generatedBy": "scripts/avar-fixtures.ts",
+  "note": "Normative fixture set (SPEC.md §9). Generated deterministically; do not edit by hand. A disagreement between a fixture and SPEC.md is a specification defect and blocks publication.",
+  "fixtures": [
+    {
+      "name": "01-empty",
+      "description": "Zero entries. Verdict: valid.",
+      "zip": "01-empty.avar.zip",
+      "sha256": "821be92a20906a9b5ac095032c8fa9eb7a8f0f9aec205e72a4edccd387fa07a5",
+      "expected": {
+        "verdict": "valid",
+        "entryCount": 0,
+        "signedCount": 0,
+        "unsignedCount": 0,
+        "unchainedCount": 0,
+        "issueKinds": [],
+        "readability": "readable"
+      }
+    },
+    {
+      "name": "02-single-signed",
+      "description": "One signed entry, no steps. Verdict: valid.",
+      "zip": "02-single-signed.avar.zip",
+      "sha256": "8dc7918ee393f2d231e9241029f8a6f9cc51a2cc635e705e415e5840933da5b1",
+      "expected": {
+        "verdict": "valid",
+        "entryCount": 1,
+        "signedCount": 1,
+        "unsignedCount": 0,
+        "unchainedCount": 0,
+        "issueKinds": [],
+        "readability": "readable"
+      }
+    },
+    {
+      "name": "03-multi-chain",
+      "description": "Three signed entries in one chain. Verdict: valid.",
+      "zip": "03-multi-chain.avar.zip",
+      "sha256": "cbbc83b966f42b567a4353edaabdc66e53d2c006ee6b191a1107a8cbc8d108a2",
+      "expected": {
+        "verdict": "valid",
+        "entryCount": 3,
+        "signedCount": 3,
+        "unsignedCount": 0,
+        "unchainedCount": 0,
+        "issueKinds": [],
+        "readability": "readable"
+      }
+    },
+    {
+      "name": "04-step-chain",
+      "description": "One entry with a fully chained decision + tool step pair. Verdict: valid.",
+      "zip": "04-step-chain.avar.zip",
+      "sha256": "078b9f464c6ef6fea03989a32f4ae9f28ae1911b821c2c1b9c9ab4386de4c08a",
+      "expected": {
+        "verdict": "valid",
+        "entryCount": 1,
+        "signedCount": 1,
+        "unsignedCount": 0,
+        "unchainedCount": 0,
+        "issueKinds": [],
+        "readability": "readable"
+      }
+    },
+    {
+      "name": "05-unsigned-unchained",
+      "description": "One unsigned, unchained legacy entry. Verdict: valid-with-warnings.",
+      "zip": "05-unsigned-unchained.avar.zip",
+      "sha256": "92a0696a42333c410ed65dc0bce85517c80c30ab930cc9c50c8cd4a47637fd36",
+      "expected": {
+        "verdict": "valid-with-warnings",
+        "entryCount": 1,
+        "signedCount": 0,
+        "unsignedCount": 1,
+        "unchainedCount": 1,
+        "issueKinds": [],
+        "readability": "readable"
+      }
+    },
+    {
+      "name": "06-unicode-edge",
+      "description": "NFC/NFD, CJK, ZWJ emoji in string values. Verdict: valid.",
+      "zip": "06-unicode-edge.avar.zip",
+      "sha256": "c48ae7ae4711e7c6474a344169589e97af8c6998b47164fcb4c2c5b3afe5bb06",
+      "expected": {
+        "verdict": "valid",
+        "entryCount": 1,
+        "signedCount": 1,
+        "unsignedCount": 0,
+        "unchainedCount": 0,
+        "issueKinds": [],
+        "readability": "readable"
+      }
+    },
+    {
+      "name": "07-optional-evidence",
+      "description": "Declared intent, declared target, classification, remediable denial, governance, lineage, origin, and an x-* extension. Verdict: valid; readability: readable-with-unresolved (the x-* field is named, not ignored).",
+      "zip": "07-optional-evidence.avar.zip",
+      "sha256": "99d9b3a9865f26bc0027bd9afffba2e18c0269c1631d58cee379b8e2369c89f6",
+      "expected": {
+        "verdict": "valid",
+        "entryCount": 1,
+        "signedCount": 1,
+        "unsignedCount": 0,
+        "unchainedCount": 0,
+        "issueKinds": [],
+        "readability": "readable-with-unresolved"
+      }
+    },
+    {
+      "name": "08-agent-signed",
+      "description": "Entry carrying agentIdentity + agentSignature over the tail step hash. Verdict: valid.",
+      "zip": "08-agent-signed.avar.zip",
+      "sha256": "10afe203cc74aca759bce8fc3c265a30cf78a5e6333e492e0e65fb20f56e4b1e",
+      "expected": {
+        "verdict": "valid",
+        "entryCount": 1,
+        "signedCount": 1,
+        "unsignedCount": 0,
+        "unchainedCount": 0,
+        "issueKinds": [],
+        "readability": "readable"
+      }
+    },
+    {
+      "name": "09-closed-chain",
+      "description": "Signed terminal closure marker. Verdict: closed (a SUCCESS verdict).",
+      "zip": "09-closed-chain.avar.zip",
+      "sha256": "769440ad1c226721c7e9b37692672db2c6a449fecd6732236e27647a5abb6017",
+      "expected": {
+        "verdict": "closed",
+        "entryCount": 2,
+        "signedCount": 2,
+        "unsignedCount": 0,
+        "unchainedCount": 0,
+        "issueKinds": [],
+        "readability": "readable"
+      }
+    },
+    {
+      "name": "10-tampered-signature",
+      "description": "Signature byte-flipped. Verdict: invalid (signature-invalid).",
+      "zip": "10-tampered-signature.avar.zip",
+      "sha256": "feb94a505a96461d80bae593f2a27eb77ec189cd909d5b55cadce29fb8fb3030",
+      "expected": {
+        "verdict": "invalid",
+        "entryCount": 1,
+        "signedCount": 1,
+        "unsignedCount": 0,
+        "unchainedCount": 0,
+        "issueKinds": [
+          "signature-invalid"
+        ],
+        "readability": "readable"
+      }
+    },
+    {
+      "name": "11-broken-chain",
+      "description": "prevHash altered on entry 2. Verdict: invalid (chain-broken).",
+      "zip": "11-broken-chain.avar.zip",
+      "sha256": "91cebdf2722d94488c828ed53991809a81f8f1f44b52e6b130ac7def8e8124cc",
+      "expected": {
+        "verdict": "invalid",
+        "entryCount": 2,
+        "signedCount": 2,
+        "unsignedCount": 0,
+        "unchainedCount": 0,
+        "issueKinds": [
+          "chain-broken"
+        ],
+        "readability": "readable"
+      }
+    },
+    {
+      "name": "12-digest-mismatch",
+      "description": "manifest.entriesSha256 does not match entries.ndjson. Verdict: invalid.",
+      "zip": "12-digest-mismatch.avar.zip",
+      "sha256": "c021789a6b718846e41d1927ca8d8a47e6b217424bbb8a9b2dfae8ea898a00de",
+      "expected": {
+        "verdict": "invalid",
+        "entryCount": 1,
+        "signedCount": 1,
+        "unsignedCount": 0,
+        "unchainedCount": 0,
+        "issueKinds": [
+          "entries-sha256-mismatch"
+        ],
+        "readability": "readable"
+      }
+    },
+    {
+      "name": "13-future-major",
+      "description": "Receipt declares avar/9. Readability: refused — this verifier states no semantic verdict under a later MAJOR; the verdict field carries invalid so no caller can mistake refusal for acceptance.",
+      "zip": "13-future-major.avar.zip",
+      "sha256": "4c5bcdaa210005c80a5790e56cc877415a1207a0f883c63bcd76d360627a4d66",
+      "expected": {
+        "verdict": "invalid",
+        "entryCount": 1,
+        "signedCount": 1,
+        "unsignedCount": 0,
+        "unchainedCount": 0,
+        "issueKinds": [
+          "manifest-invalid",
+          "spec-version-mismatch"
+        ],
+        "readability": "refused"
+      }
+    },
+    {
+      "name": "14-decision-allow",
+      "description": "Decision envelope (SPEC-ADDENDUM-1.13): schema pinned by version AND hash, runtime-assigned provenance, satisfied inputs, one participant, verdict ALLOW inside a bounded execution window. Verdict: valid.",
+      "zip": "14-decision-allow.avar.zip",
+      "sha256": "581ce0f6f23525da7eaf28604340f5036eea4e3cab9ed5071db6a6a35410814a",
+      "expected": {
+        "verdict": "valid",
+        "entryCount": 1,
+        "signedCount": 1,
+        "unsignedCount": 0,
+        "unchainedCount": 0,
+        "issueKinds": [],
+        "readability": "readable"
+      }
+    },
+    {
+      "name": "15-decision-unable",
+      "description": "Decision envelope where the bound participant could not evaluate: outcome `unable` with a reason, resolved by the declared onUnable posture to an effective DENY. `unable` never appears as a Verdict. Verdict: valid.",
+      "zip": "15-decision-unable.avar.zip",
+      "sha256": "7829df0336461c5949ecd9f45207a1d8e39bebda68ea5172715ef3043ada9a41",
+      "expected": {
+        "verdict": "valid",
+        "entryCount": 1,
+        "signedCount": 1,
+        "unsignedCount": 0,
+        "unchainedCount": 0,
+        "issueKinds": [],
+        "readability": "readable"
+      }
+    }
+  ]
+}

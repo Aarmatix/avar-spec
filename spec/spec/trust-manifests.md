@@ -1,13 +1,13 @@
 # SPEC ADDENDUM 1.7 — Trust Manifests & Subscriptions
 
 Status: **DRAFT — implementation gated on ADR-0002 acceptance.**
-Depends on: SPEC-ADDENDUM-1.5 (DSSE + in-toto Statement), SPEC-ADDENDUM-1.6 (Signed Trust Lists).
+Depends on: SPEC-ADDENDUM-1.5 § (DSSE + in-toto Statement), SPEC-ADDENDUM-1.6 (Signed Trust Lists).
 Governs: `trustmanifest/v1` wire format, subscription records, refresh semantics.
 Governed by: **ADR-0002 · The Trust Invariant (T-INV)** — no derived trust; explicit choice; monotonic updates; reproducible state.
 
 ## Motivation
 
-The prior `trustlist/v1` addendum is a one-shot artifact: export a signed list, import it once, done. Real deployments need a way to say "keep this list fresh" without letting the network silently expand the trust set.
+ (`trustlist/v1`) is a one-shot artifact: export a signed list, import it once, done. Real deployments need a way to say "keep this list fresh" without letting the network silently expand the trust set.
 
 Addendum 1.7 introduces two changes:
 
@@ -18,7 +18,7 @@ Addendum 1.7 introduces two changes:
 
 ## Wire format
 
-Trust manifests reuse the **DSSE envelope** from SPEC-ADDENDUM-1.5
+Trust manifests reuse the **DSSE envelope** from 
 (`payloadType: application/vnd.in-toto+json`). The new `predicateType` is:
 
 ```
@@ -29,32 +29,32 @@ The in-toto **Statement** carries:
 
 ```jsonc
 {
-  "_type": "https://in-toto.io/Statement/v1",
-  "subject": [{
-    "name": "trustmanifest:<authority.id>@<sequence>",
-    "digest": { "sha256": "<hex of canonical(entries)>" }
-  }],
-  "predicateType": "https://aarmos.io/attestations/trustmanifest/v1",
-  "predicate": {
-    "kind": "trustmanifest",
-    "authority": {
-      "id": "<stable opaque id, e.g. urn:aarmos:authority:acme-security>",
-      "label": "ACME Security",
-      "fingerprint": "<ed25519 fingerprint of the signing key>",
-      "publicKey": "<b64 raw ed25519>"
-    },
-    "sequence": 42,
-    "issuedAt": "2026-07-15T00:00:00Z",
-    "expiresAt": "2027-07-15T00:00:00Z",   // optional; verifiers MUST reject if past
-    "entries": [
-      {
-        "fingerprint": "<publisher fingerprint>",
-        "publicKey": "<b64 raw ed25519>",
-        "label": "Platform Team",
-        "notes": "…"
-      }
-    ]
-  }
+ "_type": "https://in-toto.io/Statement/v1",
+ "subject": [{
+ "name": "trustmanifest:<authority.id>@<sequence>",
+ "digest": { "sha256": "<hex of canonical(entries)>" }
+ }],
+ "predicateType": "https://aarmos.io/attestations/trustmanifest/v1",
+ "predicate": {
+ "kind": "trustmanifest",
+ "authority": {
+ "id": "<stable opaque id, e.g. urn:aarmos:authority:acme-security>",
+ "label": "ACME Security",
+ "fingerprint": "<ed25519 fingerprint of the signing key>",
+ "publicKey": "<b64 raw ed25519>"
+ },
+ "sequence": 42,
+ "issuedAt": "2026-07-15T00:00:00Z",
+ "expiresAt": "2027-07-15T00:00:00Z", // optional; verifiers MUST reject if past
+ "entries": [
+ {
+ "fingerprint": "<publisher fingerprint>",
+ "publicKey": "<b64 raw ed25519>",
+ "label": "Platform Team",
+ "notes": "…"
+ }
+ ]
+ }
 }
 ```
 
@@ -75,15 +75,15 @@ Stored locally (CLI: `~/.aarmos/trust/subscriptions.json`; Browser: IndexedDB `a
 
 ```jsonc
 {
-  "id": "<uuid>",
-  "url": "https://acme.example.com/aarmos/trust.manifest.json",
-  "authorityId": "urn:aarmos:authority:acme-security",
-  "issuerFingerprint": "<ed25519 fingerprint pinned at create>",
-  "lastAcceptedSequence": 42,
-  "lastAcceptedAt": "2026-07-15T00:00:00Z",
-  "lastCheckedAt": "2026-07-15T01:00:00Z",
-  "lastError": null,
-  "createdAt": "2026-07-01T00:00:00Z"
+ "id": "<uuid>",
+ "url": "https://acme.example.com/aarmos/trust.manifest.json",
+ "authorityId": "urn:aarmos:authority:acme-security",
+ "issuerFingerprint": "<ed25519 fingerprint pinned at create>",
+ "lastAcceptedSequence": 42,
+ "lastAcceptedAt": "2026-07-15T00:00:00Z",
+ "lastCheckedAt": "2026-07-15T01:00:00Z",
+ "lastError": null,
+ "createdAt": "2026-07-01T00:00:00Z"
 }
 ```
 

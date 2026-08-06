@@ -1,87 +1,119 @@
 # AVAR — Aarmos Verifiable Action Record
 
-**Version:** `avar/1` (spec revision `1.1`)
-**Status:** Release Candidate — subject to change until `1.0` GA. Minor revision `1.1` (Human Oversight additions) is backward-compatible with `1.0-rc1`.
-**License:** CC-BY-4.0 (see `LICENSE`).
-**Stewardship:** Aarmatix LLC stewards versions `1.x`. A formal RFC process opens with version `2`.
+**Normative version:** `avar/1` — **AVAR 1.0 (Normative)**
+**Status:** Normative. This document supersedes all pre-normative revisions (`1.0-rc1` through `1.20`), which are retained, unchanged, under `history/` for the record.
+**License:** CC-BY-4.0 (see `LICENSE`). Reference implementation licensed separately (Apache-2.0).
+**Stewardship:** Aarmatix LLC stewards AVAR `1.x`. A public RFC process opens with `avar/2`.
 
 ---
 
-## 1. Terminology & Scope
+## 0. Status of this document
 
-- **AvarEntry** — one signed, hash-chained record of a single agent turn (query → decisions → tool calls → outcome).
-- **AvarChain** — the ordered sequence of entries produced by a single device, linked by prev-hash.
-- **AvarBundle** — a portable zip archive containing one or more entries plus a manifest and the public keys required to verify them.
-- **Verifier** — any implementation that consumes an AvarBundle and produces a `VerificationReport` per §6.
+AVAR was developed as a base specification plus nineteen incremental addenda
+while it had no external adopters. This document collapses that evolution into
+a single normative baseline. Nothing is deleted: the pre-normative addenda live
+in `history/` and remain readable, but they are **informative only** and no
+longer define conformance.
 
-### In scope for `avar/1`
-- Canonical JSON serialization rules (§2).
-- Signed body definition and Ed25519 signature envelope (§3).
-- Entry-level and per-step hash chain (§4).
-- Bundle envelope layout (§5).
-- Verification algorithm (§6).
-- Redaction contract (§7).
-- Framework tag vocabulary (§8).
+There is exactly one normative definition of AVAR semantics. Every
+implementation, fixture, and producer derives from it.
 
-### Out of scope for `avar/1`
-- Signed *policy* bundles (separate mechanism, not verified by AVAR).
-- Multi-device chain merge (reserved: `seatId` field present but unused).
-- Encrypted-at-rest bundles (bundles are integrity-protected, not confidential).
-- Timestamp authority / RFC 3161 counter-signatures.
-- Kill-switch, vault-rotation, egress-first-contact receipts as **new event types** — those are added as new `TraceStep` decision sources in minor revisions (`avar/1.1`, `avar/1.2`) without breaking `avar/1` verifiers.
+### 0.1 Normative vs. informative
+
+**Normative** — this document, the companion object specifications in `spec/`,
+the fixture set in `fixtures/`, error codes, canonicalization, hashing,
+signature rules, and the verdict vocabulary.
+
+**Informative** — ADRs, examples, tutorials, implementation notes, rationale,
+everything under `history/`, and all prose marked *informative*.
+
+Specification and fixtures together define conformance. A disagreement between
+them is a **specification defect**: publication is blocked until they agree.
+Fixtures never outrank this document.
+
+### 0.2 The three layers
+
+| Layer | Object | Role |
+|---|---|---|
+| 1 | **Entry** | The atom. One signed, hash-chained record of a single governed run. |
+| 2 | **Bundle** | Packaging. A portable container of entries plus the material needed to verify them. |
+| 3 | **Verification Result** | The specified output of a verifier. |
+
+An Entry is meaningful without a Bundle. A Bundle adds no evidence semantics of
+its own — it is transport with an integrity binding.
+
+### 0.3 Naming
+
+All field names in AVAR are **camelCase**. This is normative and applies to
+entries, manifests, verification results, and every companion object.
+
+---
+
+## 1. Terminology
+
+- **Entry** (`AvarEntry`) — one signed, hash-chained record of a single agent run.
+- **Chain** — the ordered sequence of entries produced by one device, linked by prev-hash.
+- **Bundle** (`AvarBundle`) — a ZIP archive containing entries, a manifest, and public keys.
+- **Verifier** — any implementation that consumes a Bundle or an Entry sequence and produces a Verification Result per §6.
+- **Producer** — any implementation that emits Entries. The reference runtime is one conforming producer; it is not authoritative over this specification.
+
+The key words MUST, MUST NOT, SHOULD, MAY are to be interpreted per RFC 2119.
 
 ---
 
 ## 2. Canonical JSON
 
-All hashing and signing operate over **canonical JSON** bytes. Non-canonical serializations MUST be re-serialized before hashing.
+All hashing and signing operate over **canonical JSON** bytes. Non-canonical
+serializations MUST be re-serialized before hashing.
 
-### Rules
-
-1. **Character encoding:** UTF-8, no BOM.
-2. **Unicode normalization:** All string values and object keys MUST be Unicode NFC-normalized before serialization.
-3. **Object keys:** Sorted lexicographically by UTF-16 code unit (equivalent to JavaScript `Array.prototype.sort()` on the key list).
-4. **Only string keys** are permitted.
-5. **`undefined` values and function values are forbidden.** Producers MUST omit the key entirely rather than emit `null` as a substitute (unless the field's schema explicitly permits `null`).
-6. **Numbers MUST be finite.** `NaN`, `+Infinity`, `-Infinity` are forbidden. Integer values in the safe range are serialized without a decimal point; other numbers use the shortest JavaScript `Number.prototype.toString()` form.
+1. **Encoding:** UTF-8, no BOM.
+2. **Unicode:** all string values and object keys NFC-normalized before serialization.
+3. **Key order:** sorted by UTF-16 code unit (equivalent to JavaScript `Array.prototype.sort` on the key list).
+4. **String keys only.**
+5. **`undefined` and function values are forbidden.** Producers MUST omit the key rather than substitute `null`, unless the field's schema explicitly permits `null`.
+6. **Numbers MUST be finite.** `NaN`, `+Infinity`, `-Infinity` are forbidden. Serialization uses the shortest round-trip form.
 7. **No whitespace** between tokens.
 8. **No trailing newline.**
-9. **String escaping:** Only the escapes required by RFC 8259 (`\"`, `\\`, `\/` OPTIONAL — prefer unescaped, `\b`, `\f`, `\n`, `\r`, `\t`, and `\u00XX` for control characters `U+0000`..`U+001F`). Non-ASCII characters MUST NOT be escaped.
-
-### Reference pseudocode
+9. **Escaping** per RFC 8259 only. Non-ASCII characters MUST NOT be escaped.
 
 ```
 canonicalize(v):
-  if v is null | boolean | number | string:
-    return JSON serialization per rules 5-9
-  if v is array:
-    return "[" + join(",", map(canonicalize, v)) + "]"
+  if v is null | boolean | number | string: return JSON per rules 5-9
+  if v is array:  return "[" + join(",", map(canonicalize, v)) + "]"
   if v is object:
-    keys = sort(Object.keys(v))                // UTF-16 code-unit order
+    keys  = sort(Object.keys(v))            // UTF-16 code-unit order, undefined dropped
     parts = [ JSON.stringify(k) + ":" + canonicalize(v[k]) for k in keys ]
     return "{" + join(",", parts) + "}"
 ```
 
-> **Note.** The reference implementation in [`@avar-standard/core`](https://github.com/Aarmatix/avar) is the normative tie-breaker for any ambiguity in this section. Verifiers SHOULD run the `unicode-edge` golden fixture (§9) as an acceptance test.
+### 2.1 Unknown fields
+
+A verifier MUST preserve unknown fields byte-for-byte when re-serializing for
+hash checks, and MUST NOT fail on their presence. From AVAR 1.0 onward,
+unknown-field tolerance is a guarantee: a conformant 1.0 verifier reading a
+receipt written under a later 1.x minor revision states a verdict about the
+fields it understands and **names** the fields it does not (§6.4). Unknown
+fields are never silently ignored and never fatal.
+
+Producers MAY add extension fields prefixed `x-`. All fields — known and
+`x-*` — participate in the signed body and the hash chain exactly as written.
 
 ---
 
-## 3. AvarEntry — Signed Body
+## 3. Entry
 
-### 3.1 Type
-
-An AvarEntry has the following shape (TypeScript-flavored for illustration):
+### 3.1 Core shape
 
 ```ts
 type AvarEntry = {
   // Identity
-  id: string;                    // UUID v4
-  ts: number;                    // start time, epoch ms
+  id: string;                 // UUID v4
+  ts: number;                 // start time, epoch ms
   finishedAt?: number;
   workspaceId: string;
-  agentId?: string;              // undefined = main chat
+  agentId?: string;           // absent = main chat
 
-  // Display-only identity snapshot
+  // Display-only snapshot (never authority-bearing)
   agentName?: string;
   agentEmoji?: string;
   agentColor?: string;
@@ -97,155 +129,317 @@ type AvarEntry = {
   inputTokens?: number;
   outputTokens?: number;
   costUsd?: number;
-  seed?: number | string;        // attestation only
-  systemFingerprint?: string;    // attestation only
+  seed?: number | string;
+  systemFingerprint?: string;
 
   // Device & policy binding
-  deviceFingerprint?: string;    // MUST equal sha256(devicePubKey_b64u).slice(0, 12)
+  deviceFingerprint?: string; // MUST equal sha256(devicePubKey)[0..12]
   policyFingerprint?: string;
   policyIssuer?: string;
 
-  // Delegation lineage (R7)
+  // Delegation lineage
   parentTraceId?: string | null;
   delegationChain?: { agentId: string; traceId?: string | null; at: number }[];
 
   // Chain (§4)
-  prevHash?: string;             // hex, 64 chars
-  entryHash?: string;            // hex, 64 chars
+  prevHash?: string;          // 64 hex
+  entryHash?: string;         // 64 hex
 
-  // Reserved for Wave 4 multi-seat aggregation; MUST be absent or a string.
-  seatId?: string;
+  // Signature envelope (§3.4) — NOT part of the signed body
+  signature?: string;         // base64url
+  devicePubKey?: string;      // base64url, raw Ed25519
+} & OptionalEvidenceFields & { [k: `x-${string}`]: unknown };
+```
 
-  // Signature envelope (§3.3) — NOT part of the signed body
-  signature?: string;            // base64url
-  devicePubKey?: string;         // base64url, Ed25519 raw public key
+### 3.2 Steps
+
+```ts
+type TraceStep = ToolStep | TextStep | DecisionStep;
+
+type ToolStep = {
+  kind: "tool"; ts: number; tool: string;
+  argsRedacted: unknown; outputPreview?: string;
+  ok: boolean; ms?: number; error?: string;
+  policyHits?: { ruleId: string; action: "block"|"downgrade"|"warn"|"allow"; reason?: string }[];
+  contract?: { in?: "pass"|"fail"|"absent"; out?: "pass"|"fail"|"absent";
+               violations?: string[]; fingerprint?: string };
+  target?: DeclaredTarget;             // §3.3.8
+  prevStepHash?: string; stepHash?: string;
 };
 
-type TraceStep =
-  | ToolStep
-  | TextStep
-  | DecisionStep;                // includes source: "kill" | "vault" | "egress" | "consent" | "gate" | ...
+type TextStep = { kind: "text"; ts: number; preview: string;
+                  prevStepHash?: string; stepHash?: string };
+
+type DecisionStep = {
+  kind: "decision"; ts: number; tool: string;
+  decision: string;                    // open vocabulary — see below
+  source: string;
+  reason?: string; note?: string;
+  gates?: { kind: string; source: string }[];
+  policyFingerprint?: string; policyIssuer?: string;
+  bundleState?: "unknown"|"none"|"valid"|"grace"|"invalid";
+  killSwitchAt?: boolean;
+  killScope?: "all"|"writes"|"destructive";
+  argsBeforeHash?: string; argsAfterHash?: string; modifyReasons?: string[];
+  deferralId?: string; deferReason?: string; resolutionMethods?: string[];
+  timeoutMs?: number; resolvedAt?: number; resolutionMethod?: string;
+  remediation?: Remediation[];         // §3.3.7
+  resource?: { classification?: "public"|"internal"|"confidential"|"restricted";
+               unlabelled?: boolean };  // §3.3.6
+  frameworks?: string[];
+  prevStepHash?: string; stepHash?: string;
+};
 ```
 
-Producers MAY add extension fields prefixed with `x-`. Verifiers MUST preserve unknown fields when re-serializing for hash checks. **All fields — known and `x-*` — participate in the signed body and hash chain** exactly as they appear.
+`decision` is an open string. The reserved values are `ALLOW`, `MODIFY`,
+`DENY`, `STEP_UP`, `DEFER`, `KILL`, `KILL_REVERT`, `ROTATE`, `REVOKE`,
+`FIRST_CONTACT`. Verifiers MUST treat unrecognized values as opaque data.
 
-### 3.2 Signed body
+### 3.3 Optional evidence fields
 
-The signed body is the AvarEntry with the following fields removed:
+Every field in this section is OPTIONAL and additive. Absence is meaningful:
+it means *nothing was declared*, never *the value was empty or unknown*. A
+receipt from a producer that declares none of them is byte-identical to a
+receipt from a producer that does not implement them.
 
-- `signature`
-- `devicePubKey`
+**3.3.1 Cross-party binding** — `parentReceipt?: { hash, issuer?, traceId?, protocol? }`.
+Pins the caller's receipt when the run was initiated across a trust boundary.
 
-**All other fields (including `deviceFingerprint`, `prevHash`, `entryHash`, and any `x-*` extensions) are included.**
+**3.3.2 Producer origin** — `origin?: { release, releaseSig?, builderPubkey? }`.
+Attributes the emitting build. Never gates a verdict.
 
-`deviceFingerprint` MUST be derived as:
+**3.3.3 Agent identity** — `agentIdentity?: { agentId, alg: "Ed25519", fingerprint, publicKey? }`
+and `agentSignature?: string`. When both `agentSignature` and
+`agentIdentity.publicKey` are present, verifiers MUST verify the signature over
+the tail `stepHash` (or `GENESIS_PREV_STEP_HASH`) and fail hard on mismatch.
+`agentSignature` without a resolvable key yields the warning
+`agent-key-unresolved`. `fingerprint` is advisory and is not recomputed.
+
+**3.3.4 Governance provenance** — `governance?: { authorityId, manifestSequence, policyDigest, policyLabel?, evidenceRef? }`.
+Lets a holder of the matching authority manifest confirm *governed by X at
+sequence N* offline. Verifiers MUST NOT fetch anything to evaluate it.
+
+**3.3.5 Lineage** — `lineage?: { policyBundle?, runtimeBuild?, parentReceipt?, agentKey? }`.
+A compact grouping key. Never gates chain or signature verdicts.
+
+**3.3.6 Classification** — `resource.classification` on a decision step carries
+the level in force at decision time, drawn from the closed ordered lattice
+`public < internal < confidential < restricted` (`classificationVersion = "classification/1"`).
+`resource.unlabelled: true` records that the level came from fail-closed
+evaluation rather than a declaration. The lattice is closed: deployments MUST
+NOT add, remove, or reorder levels. A verifier that implements classification
+MUST compare decision frames before comparing verdicts — *evaluated under a
+different classification version* is a materially different statement from
+*different verdict*.
+
+**3.3.7 Remediable denials** — a `DENY` decision step MAY carry
+`remediation: { capability, constraint, expect: "MODIFY"|"STEP_UP", note? }[]`.
+Rules: authored from the signed policy artifact, never synthesized from the
+request, heuristics, or a model; a statement rather than a grant, so taking the
+path re-enters the gate as a fresh request; narrowing only, so a remediation
+MUST NOT name a capability outside the reach of the denied request and MUST
+carry a non-empty constraint. Presence of a remediation MUST NOT change the
+verdict of the denial.
+
+**3.3.8 Declared intent and target** —
+`declaredIntent?: { text, declaredBy: "user"|"caller"|"adapter", at }` at entry
+level, and `target?: { resource, kind?, declaredBy: "adapter"|"caller" }` at
+tool-step level. Both are **declared, never inferred**: a producer MUST NOT
+parse them out of arguments, summarize them with a model, or guess them from a
+tool name. `declaredBy` MUST NOT be `"runtime"` — the runtime does not have
+intent. Neither field carries authority; intent is a claim about motive, and
+motive is not observable and MUST NOT gate a decision. Length caps: intent text
+512, target resource 256, target kind 64.
+The legacy scalar pair `intent?: string` / `intentHash?: string` remains
+readable; new producers SHOULD emit `declaredIntent`.
+
+**3.3.9 Chain closure** — `closure?: { workspaceId, reason, closedAt, finalEntryHash, closedEntryCount, note? }`.
+An entry carrying this block is a terminal *closure marker*: the chain for that
+workspace is deliberately ended and no further entries will be appended. See
+§4.4. Closure is neither deletion nor revocation.
+
+**3.3.10 Multi-seat** — `seatId?: string`. Opaque; reserved for aggregation.
+
+**3.3.11 Framework tags** — `frameworks?: string[]` at entry or step level.
+Reserved vocabulary: `eu-ai-act:art-12`, `eu-ai-act:art-14`,
+`hipaa:164.312-b`, `soc2:cc7.2`, `nist-ai-rmf:measure-2.7`,
+`nist-ai-rmf:manage-2.3`, `iso-42001:8.4`. Custom tags MUST use an `x-` prefix.
+Adding a reserved value requires a spec revision.
+
+**3.3.12 Decision envelope** — `decision?: { ... }`. OPTIONAL and additive.
+Present only when the entry governed a **declared Decision**; when absent the
+entry is *authority-only* and no schema, input contract, or execution window
+applies. Both shapes are conformant, and verifiers predating this section MUST
+treat `decision` as opaque data per §2.1 and still report `valid`.
+
+The envelope records the schema pin (semantic `version` **and** content
+`hash`), each declared input's type, stable identifier, runtime-assigned
+provenance, classification, observation reference, and satisfaction state, the
+per-participant outcome, the composed `verdict`, and the bounded
+`executionWindow`. Normative rules:
+
+- Provenance is assigned by the runtime, never claimed by the caller.
+- Observation carries a reference, never a payload (ADR-0001).
+- `unable` is a participant outcome, never a Verdict. A verifier MUST be able
+  to distinguish "evaluated and denied" from "unable to evaluate" from the
+  receipt alone.
+- A verdict authorizes execution only inside `executionWindow`.
+
+The full grammar, including bindings and participant contracts, is normative in
+[`spec/decision-governance.md`](./spec/decision-governance.md). Fixtures
+`14-decision-allow` and `15-decision-unable` pin the wire form.
+
+**3.3.13 Decision observations and drift** — `decision.observation?`,
+`decision.participants[].observation?`, and `decision.drift?`. All OPTIONAL and
+additive.
+
+An *observation* is a fact the runtime witnessed while the decision was
+evaluated; it is never a metric, a score, a grade or a health indicator. The key
+sets are CLOSED — a verifier MUST reject unknown keys inside an observation
+rather than treat them as extension data.
 
 ```
-deviceFingerprint = hex( sha256( utf8Bytes( devicePubKey_b64u ) ) )[0..12]
+participants[].observation = {
+  disposition:    "invoked" | "skipped" | "timeout" | "failed" | "unavailable"
+  reason?:        string      // REQUIRED when disposition is not "invoked"
+  inputsConsumed?: string[]   // declared input names, sorted
+}
+
+observation = {
+  retries?:      number
+  overrides?:    number
+  replayResult?: "reproduced" | "diverged" | "not-replayed"
+}
 ```
 
-Producers MUST compute and stamp `deviceFingerprint` **before** signing. Verifiers MUST recompute and reject on mismatch.
+`drift` records the governance configuration the instance ran under, so that
+"what changed?" is answered from evidence instead of inferred:
 
-### 3.3 Signature envelope
+```
+drift = {
+  schemaHash:          string
+  policyHash?:         string
+  authorityVersion?:   string
+  participantSetHash:  string   // order-sensitive hash of the composition
+  frame?: { latticeVersion, resourceModelVersion, frameId }
+}
+```
 
-- Algorithm: **Ed25519** (RFC 8032), raw 32-byte public key exported as base64url (no padding).
-- Signature: raw 64-byte Ed25519 signature over the UTF-8 bytes of `canonicalize(signedBody)`, encoded as base64url (no padding).
-- `signature` and `devicePubKey` fields hold the base64url strings.
+Normative rules:
 
-Absence of `signature` / `devicePubKey` means the entry is **unsigned**. Unsigned entries are permitted in the chain (see §4 legacy-reset rule) but a verifier MUST report them as `unsigned` and MUST NOT report them as `valid`.
+- Observations MUST NOT participate in composition and MUST NOT participate in
+  replay. Two receipts that differ only in observations produce the same verdict.
+- `participantSetHash` is order-sensitive: inserting a participant, removing
+  one, or reordering the composition is a different governance configuration
+  even when schema, policy and authority are unchanged.
+- Derived statements computed from observations MUST cite the fields they were
+  derived from; a statement that cannot cite its evidence MUST NOT be emitted.
+- A decision identifier is a permanent governance identity. It MUST NOT change
+  across schema versions; a different decision is a different `decision.id`.
+
+Fixtures `14-decision-allow` and `15-decision-unable` pin the observation and
+drift wire form.
+
+### 3.4 Signed body and signature envelope
+
+The signed body is the Entry with `signature` and `devicePubKey` removed. All
+other fields — including `deviceFingerprint`, `prevHash`, `entryHash`, and any
+`x-*` extension — are included.
+
+```
+deviceFingerprint = hex(sha256(utf8(devicePubKey_b64u)))[0..12]
+```
+
+Producers MUST stamp `deviceFingerprint` before signing. Verifiers MUST
+recompute it and reject on mismatch.
+
+- Algorithm: **Ed25519** (RFC 8032); raw 32-byte public key as base64url, unpadded.
+- Signature: raw 64-byte signature over `utf8(canonicalize(signedBody))`, base64url, unpadded.
+
+An entry lacking `signature`/`devicePubKey` is **unsigned**. Unsigned entries
+are permitted (§4.3) but a verifier MUST report them and MUST NOT return the
+verdict `valid`.
 
 ---
 
-## 4. Hash Chain
+## 4. Hash chain
 
-### 4.1 Entry-level chain
-
-Entries in a single device's ledger form a linked chain in insertion order.
-
-Constants:
+### 4.1 Entry chain
 
 ```
 GENESIS_PREV_HASH = "0000000000000000000000000000000000000000000000000000000000000000"
+
+prevHash(E_i)  = entryHash(E_{i-1})   // GENESIS_PREV_HASH for i = 0
+chainBody(E_i) = canonicalize(E_i minus { entryHash, signature, devicePubKey })
+entryHash(E_i) = hex(sha256(utf8(prevHash(E_i) + "\n" + chainBody(E_i))))
 ```
 
-For each entry `E_i` with predecessor `E_{i-1}`:
+The separator is a single ASCII line feed (`0x0A`).
 
-```
-prevHash(E_i) = entryHash(E_{i-1})       (or GENESIS_PREV_HASH for i = 0)
-chainBody(E_i) = canonicalize( E_i with { entryHash: undefined, signature: undefined, devicePubKey: undefined } )
-entryHash(E_i) = hex( sha256( utf8Bytes( prevHash(E_i) + "\n" + chainBody(E_i) ) ) )
-```
-
-The literal separator between `prevHash` and `chainBody` is a single ASCII line feed (`0x0A`).
-
-### 4.2 Legacy-unchained-reset rule
-
-An entry that lacks both `prevHash` and `entryHash` is a **legacy unchained entry**. When encountered during verification:
-
-1. The verifier reports the entry as `unchained` (a warning, not an error).
-2. The chain **resets**: the next entry's expected `prevHash` becomes `GENESIS_PREV_HASH` again.
-
-This rule preserves auditability of pre-`avar/1` histories without invalidating the chain going forward.
-
-### 4.3 Per-step chain (R5)
-
-Within a single entry, `steps[]` MAY carry a per-step hash chain that binds decisions (`ALLOW`/`MODIFY`/`DENY`/`STEP_UP`/`DEFER`/`KILL`/`ROTATE`/`REVOKE`/etc.) to the tool calls they modified.
-
-Constants:
+### 4.2 Step chain
 
 ```
 GENESIS_PREV_STEP_HASH = "step-genesis:0000000000000000000000000000000000000000000000000000000000000000"
+
+prevStepHash(S_j) = stepHash(S_{j-1})  // GENESIS_PREV_STEP_HASH for j = 0
+stepBody(S_j)     = canonicalize(S_j minus { stepHash })
+stepHash(S_j)     = hex(sha256(utf8(prevStepHash(S_j) + "\n" + stepBody(S_j))))
 ```
 
-For each step `S_j` with predecessor `S_{j-1}`:
+Steps MAY be unchained. A **partially** chained `steps[]` array is invalid:
+either every step carries chain fields or none does.
 
-```
-prevStepHash(S_j) = stepHash(S_{j-1})     (or GENESIS_PREV_STEP_HASH for j = 0)
-stepBody(S_j) = canonicalize( S_j with { stepHash: undefined } )
-stepHash(S_j) = hex( sha256( utf8Bytes( prevStepHash(S_j) + "\n" + stepBody(S_j) ) ) )
-```
+### 4.3 Unchained-entry reset
 
-Steps MAY omit `prevStepHash`/`stepHash` (unchained). A partially-chained `steps[]` array is invalid — either every step carries chain fields or none do. Verifiers MUST report a partial per-step chain as `invalid` for that entry.
+An entry lacking both `prevHash` and `entryHash` is unchained. The verifier
+reports it as a warning, and the expected `prevHash` for the next entry resets
+to `GENESIS_PREV_HASH`.
+
+### 4.4 Closure rules
+
+A closure marker (§3.3.9) MUST be the terminal entry for its workspace, MUST be
+signed, MUST carry `closure.workspaceId` equal to its own `workspaceId` and
+`closure.finalEntryHash` equal to its own `prevHash`, and MUST be singular per
+workspace. Any entry appended after a closure marker for the same workspace is
+a `closure-violated` failure. Closure is non-destructive: prior entries remain
+verifiable forever.
 
 ---
 
-## 5. AvarBundle — Envelope
+## 5. Bundle
 
-An AvarBundle is a ZIP archive (RFC-compliant, no encryption) with the following mandatory members:
+A ZIP archive (no encryption) with these mandatory members:
 
-| Path | Content-Type | Description |
-|---|---|---|
-| `SPEC-VERSION` | text/plain | Exactly the string `avar/1` followed by a single LF. |
-| `manifest.json` | application/json | Bundle metadata (§5.1). Canonical JSON per §2. |
-| `entries.ndjson` | application/x-ndjson | One canonical-JSON AvarEntry per line, terminated by LF. Entries MUST appear in chain order (oldest first). Trailing LF required if `entries.ndjson` is non-empty. |
-| `pubkeys.json` | application/json | `{ "keys": [ { "kid": string, "algorithm": "Ed25519", "publicKey": string } ] }` where `publicKey` is base64url. `kid` MUST equal the 12-char device fingerprint (§3.2). |
+| Path | Description |
+|---|---|
+| `SPEC-VERSION` | Exactly `avar/1` followed by one LF. |
+| `manifest.json` | Canonical JSON per §2. Shape below. |
+| `entries.ndjson` | One canonical-JSON Entry per line, chain order (oldest first), LF-terminated. |
+| `pubkeys.json` | `{ "keys": [ { "kid", "algorithm": "Ed25519", "publicKey" } ] }`, `publicKey` base64url, `kid` equal to the 12-char device fingerprint. |
 
-Additional files with names prefixed `x-` MAY be included and MUST be ignored by verifiers that do not recognize them.
-
-### 5.1 `manifest.json` schema
+Files named `x-*` MAY be present and MUST be ignored by verifiers that do not
+recognize them.
 
 ```jsonc
 {
   "format": "avar/1",
-  "generatedAt": "2026-07-06T12:34:56.000Z",  // ISO 8601 UTC
+  "generatedAt": "2026-08-04T12:34:56.000Z",   // ISO 8601 UTC
   "producer": { "name": "aarmos", "version": "0.x.y" },
   "entryCount": 42,
-  "entriesSha256": "<hex sha256 of the raw UTF-8 bytes of entries.ndjson>",
-  "chainHead": {
-    "entryHash": "<hex, empty string if entryCount == 0>",
-    "index": 41                                 // -1 if entryCount == 0
-  },
-  "devicePublicKeys": ["<base64url>", ...]      // union across all entries
+  "entriesSha256": "<hex sha256 of the raw bytes of entries.ndjson>",
+  "chainHead": { "entryHash": "<hex, empty if entryCount == 0>", "index": 41 },
+  "devicePublicKeys": ["<base64url>"]
 }
 ```
 
-`entriesSha256` binds the manifest to the exact byte sequence of `entries.ndjson`. Verifiers MUST recompute and reject on mismatch.
+`entriesSha256` binds the manifest to the exact byte sequence of
+`entries.ndjson`. Verifiers MUST recompute it and reject on mismatch.
 
 ---
 
-## 6. Verification Algorithm
+## 6. Verification Result
 
-Input: an AvarBundle. Output: a `VerificationReport`.
+### 6.1 Shape
 
 ```ts
 type VerificationReport = {
@@ -255,112 +449,158 @@ type VerificationReport = {
   perStepChainOk: boolean;
   signaturesOk: boolean;
   fingerprintsOk: boolean;
+  agentSignaturesOk: boolean;
+  agentSignaturesChecked: number;
+  agentSignaturesUnresolved: number;
   entryCount: number;
   signedCount: number;
   unsignedCount: number;
   unchainedCount: number;
   chainHead: { entryHash: string; index: number };
-  issues: Array<{ index: number; kind: string; detail?: string }>;
-  verdict: "valid" | "invalid" | "valid-with-warnings";
+  issues: { index: number; kind: IssueKind; detail?: string }[];
+  closure?: { workspaceId: string; reason: string; closedAt: number;
+              closedEntryCount: number; index: number };
+  compatibility: CompatibilityReport;          // §6.4
+  verdict: "valid" | "valid-with-warnings" | "closed" | "invalid";
 };
 ```
 
-Steps (verifier MUST perform in this order):
+### 6.2 Algorithm
 
-1. **Format check.** `SPEC-VERSION` == `avar/1`; `manifest.json.format` == `avar/1`. Fail → `formatOk = false`, verdict `invalid`.
-2. **Envelope integrity.** Compute sha256 of raw `entries.ndjson` bytes; compare to `manifest.entriesSha256`. Fail → `entriesSha256Ok = false`, verdict `invalid`.
-3. **Per-entry parse.** Parse each line of `entries.ndjson` as JSON. Fail → `formatOk = false`.
-4. **Fingerprint check.** For each signed entry, recompute `deviceFingerprint` from `devicePubKey`; compare. Fail → `fingerprintsOk = false`, issue `{kind: "fingerprint-mismatch"}`.
-5. **Signature check.** For each signed entry, verify Ed25519 signature over `canonicalize(signedBody)`. Fail → `signaturesOk = false`, issue `{kind: "signature-invalid"}`. Unsigned entries increment `unsignedCount` (not an error, but downgrades verdict to `valid-with-warnings`).
-6. **Chain check.** Walk entries in order. For each entry:
-    - If entry is legacy-unchained (§4.2), record `unchainedCount++`, warning, and reset expected `prevHash` to `GENESIS_PREV_HASH`.
-    - Else verify `entry.prevHash == expectedPrevHash` and `entry.entryHash == recompute(entry)`. Fail → `chainOk = false`, issue `{kind: "chain-broken"}`.
-7. **Per-step chain check.** For each entry with any step carrying chain fields:
-    - Require **all** steps to carry chain fields (else `invalid`, issue `{kind: "partial-step-chain"}`).
-    - Verify per-step chain per §4.3. Fail → `perStepChainOk = false`.
-8. **Chain head.** Report `chainHead` from the last entry (or `{entryHash: "", index: -1}` for empty bundles).
-9. **Verdict computation:**
-    - `invalid` if any of `formatOk`, `entriesSha256Ok`, `chainOk`, `perStepChainOk`, `signaturesOk`, `fingerprintsOk` is `false`.
-    - Else `valid-with-warnings` if `unsignedCount > 0` or `unchainedCount > 0`.
-    - Else `valid`.
+Verifiers MUST perform these steps in order and MUST NOT perform network I/O.
 
-Verifiers MUST NOT perform any network I/O.
+1. **Compatibility.** Parse the declared spec version and decide whether a
+   verdict may be stated at all (§6.4). `refused` terminates verification.
+2. **Format.** `SPEC-VERSION` and `manifest.format` both equal `avar/1`.
+3. **Envelope integrity.** sha256 of raw `entries.ndjson` equals `manifest.entriesSha256`.
+4. **Parse.** Each line of `entries.ndjson` parses as JSON.
+5. **Fingerprints.** Recompute `deviceFingerprint` for each signed entry.
+6. **Signatures.** Verify Ed25519 over `canonicalize(signedBody)`. Unsigned entries increment `unsignedCount`.
+7. **Agent signatures.** Per §3.3.3.
+8. **Entry chain.** Per §4.1 and §4.3.
+9. **Step chain.** Per §4.2.
+10. **Closure.** Per §4.4.
+11. **Chain head.** From the last entry, or `{ entryHash: "", index: -1 }` when empty.
+12. **Verdict.** Per §6.3.
 
----
+### 6.3 Verdicts
 
-## 7. Redaction Contract
+- `invalid` — any of `formatOk`, `entriesSha256Ok`, `chainOk`, `perStepChainOk`, `signaturesOk`, `fingerprintsOk`, `agentSignaturesOk` is false, or any closure issue is present.
+- `closed` — all integrity checks pass and a conformant closure marker is present. **`closed` is a success verdict**; conformant CLIs exit `0`.
+- `valid-with-warnings` — all integrity checks pass and `unsignedCount > 0`, `unchainedCount > 0`, or `agentSignaturesUnresolved > 0`.
+- `valid` — all integrity checks pass with no warnings.
 
-AVAR entries are designed to be shareable with third-party auditors. The following guarantees apply to entries produced by conformant producers:
+### 6.4 Compatibility contract
 
-**Producers MUST scrub** (before hashing/signing) any field that would carry raw user PII, plaintext secrets, or free-form model output. Specifically:
+`compatSpecId = "avar/compat/1.0"`. One question, answered from bytes alone:
+*can this verifier state a verdict about this receipt, and under whose
+semantics?* Three outcomes, and only three:
 
-- `queryRedacted` — user query with tokens matching email, phone, SSN, credit-card, API-key, or JWT patterns replaced by `[REDACTED]` markers.
-- `TraceStep.argsRedacted` (tool step) — same rules; nested objects walked.
-- `TraceStep.outputPreview` (tool step) — truncated (≤512 chars) and redacted; MAY be omitted entirely.
-- `TraceStep.preview` (text step) — truncated and redacted.
-
-**Producers MUST NOT include** raw secrets, OAuth tokens, or session cookies anywhere in an entry.
-
-**Producers MAY** include model provider IDs, tool names, host names in `TraceStep.tool`, and cost/token counts.
-
-**Verifiers do not enforce redaction** — they only verify integrity. A bundle that verifies successfully still requires human review before public disclosure.
-
-**Non-goal.** AVAR does not guarantee that a producer scrubbed everything. It guarantees that whatever was recorded cannot be altered without detection.
-
----
-
-## 8. Frameworks Tag Vocabulary
-
-Any AvarEntry or TraceStep MAY include a `frameworks: string[]` field. Values in the closed vocabulary below are reserved:
-
-| Tag | Meaning |
+| Outcome | Meaning |
 |---|---|
-| `eu-ai-act:art-12` | EU AI Act Article 12 (record-keeping) |
-| `eu-ai-act:art-14` | EU AI Act Article 14 (human oversight) |
-| `hipaa:164.312-b` | HIPAA Security Rule §164.312(b) (audit controls) |
-| `soc2:cc7.2` | SOC 2 Trust Services Criteria CC7.2 (system monitoring) |
-| `nist-ai-rmf:measure-2.7` | NIST AI RMF MEASURE 2.7 |
-| `nist-ai-rmf:manage-2.3` | NIST AI RMF MANAGE 2.3 (human oversight controls) |
-| `iso-42001:8.4` | ISO/IEC 42001 §8.4 |
+| `readable` | Every field read is understood. |
+| `readable-with-unresolved` | Read under the semantics in force when written; unresolved fields are **named**, never counted away and never fatal. |
+| `refused` | The receipt's MAJOR version exceeds the verifier's. No verdict is claimed — a verdict it cannot justify would be worse than no verdict. |
 
-Custom tags MUST use the `x-` prefix (e.g. `x-org:internal-policy-42`). Adding a value to the closed vocabulary requires a spec revision.
+A newer receipt changes what a verifier may *claim*, never what it *concludes*
+about the fields it does understand. Conformant verifiers state a readability
+horizon of at least **10 years** for any receipt under a supported major.
 
-### `avar/1.1` additions
+### 6.5 Issue kinds (normative closed set)
 
-Minor revision `avar/1.1` (Human Oversight Control) added:
+`spec-version-mismatch`, `manifest-invalid`, `entries-parse-failed`,
+`entries-sha256-mismatch`, `fingerprint-mismatch`, `signature-invalid`,
+`signature-unsupported`, `chain-broken`, `partial-step-chain`,
+`step-chain-broken`, `agent-signature-invalid`, `agent-key-unresolved`,
+`governance-authority-mismatch`, `governance-sequence-stale`,
+`governance-policy-unlisted`, `governance-unverified`, `closure-invalid`,
+`closure-duplicate`, `closure-violated`.
 
-- `DecisionStep.decision` is a `string` open-ended value. Verifiers MUST treat unknown values as opaque data. The reserved additive values introduced by `1.1` are `KILL` (kill-switch engaged) and `KILL_REVERT` (kill-switch disengaged). Classic policy verdicts (`ALLOW | MODIFY | DENY | STEP_UP | DEFER`) are unchanged.
-- `DecisionStep.killScope?: "all" | "writes" | "destructive"` — scope stamped on `KILL` / `KILL_REVERT` entries.
-- `DecisionStep.frameworks?: string[]` — per-step framework tags (in addition to the entry-level `frameworks[]`).
-- Framework vocabulary additions: `eu-ai-act:art-14`, `nist-ai-rmf:manage-2.3`.
-
----
-
-## 9. Golden Fixtures (Normative)
-
-Conformant verifiers MUST pass all fixtures in the AVAR conformance suite ([`Aarmatix/avar-conformance`](https://github.com/Aarmatix/avar-conformance)) as well as the reference-implementation fixtures in [`Aarmatix/avar` `packages/core/test/fixtures/`](https://github.com/Aarmatix/avar/tree/main/packages/core/test/fixtures):
-
-1. `empty` — zero entries.
-2. `single` — one signed entry, no steps.
-3. `multi-chain` — three signed entries, chained.
-4. `per-step-chain` — one entry with a chained `decision` + `tool` step sequence.
-5. `legacy-reset` — one unchained legacy entry followed by a fresh chain.
-6. `tampered-signature` — signature byte-flipped on entry 2. Verdict: `invalid`.
-7. `tampered-chain` — `prevHash` altered on entry 2. Verdict: `invalid`.
-8. `unicode-edge` — NFC/NFD, surrogate pairs, emoji in `queryRedacted`. Verdict: `valid`.
+Adding an issue kind is a minor revision and moves specification, fixtures,
+reference implementation, and producers together (§10).
 
 ---
 
-## 10. Versioning
+## 7. Redaction contract
 
-- `avar/1` is stable. Additive changes (new `TraceStep` kinds, new decision sources, new optional fields, new reserved framework tags) constitute a **minor** revision (`avar/1.1`, `avar/1.2`, …). Verifiers built for `avar/1.0` MUST accept minor-revision bundles without error, treating unknown additive fields per §3.1.
-- **Breaking changes** (canonical JSON rule changes, hash algorithm change, envelope layout change, field removal) require `avar/2`.
-- The spec revision (`1.0-rc1`, `1.0`, `1.1`, ...) is tracked in `CHANGELOG.md`.
+Producers MUST scrub, before hashing and signing, any field carrying raw PII,
+plaintext secrets, or free-form model output: `queryRedacted`,
+`ToolStep.argsRedacted` (nested objects walked), `ToolStep.outputPreview`
+(≤512 chars, MAY be omitted), `TextStep.preview`.
+
+Producers MUST NOT include raw secrets, OAuth tokens, or session cookies
+anywhere in an entry. Producers MAY include provider ids, model ids, tool
+names, host names, and cost/token counts.
+
+Verifiers do not enforce redaction; they verify integrity. AVAR does not
+guarantee that a producer scrubbed everything. It guarantees that whatever was
+recorded cannot be altered without detection.
+
+---
+
+## 8. Companion object specifications (normative)
+
+These objects have their own lifecycle and are specified separately. They are
+normative and versioned with this baseline.
+
+| Document | Object |
+|---|---|
+| `spec/trust-lists.md` | Signed trust lists |
+| `spec/trust-manifests.md` | Trust manifests and subscriptions |
+| `spec/authority-manifests.md` | Authority-shaped trust manifests |
+| `spec/governed-change.md` | Governed change sets |
+| `spec/recovery-points.md` | Governance recovery points |
+| `spec/trust-boundaries.md` | Declared data contracts, authority-bound credentials |
+| `spec/continuity.md` | Continuity witnesses, principal continuity |
+| `spec/fork-and-succession.md` | Fork points, hold replication, authority succession |
+
+---
+
+## 9. Conformance and fixtures
+
+A conformant verifier MUST reproduce the expected Verification Result for every
+fixture in `fixtures/`, byte-comparable on the fields each fixture pins.
+
+Fixtures are generated from a real producer run, never hand-written, and are
+committed alongside their expected results. **No AVAR artifact is released to
+any third party until the public reference verifier validates it without
+private code** — this is the launch gate, and it is mechanized in CI.
+
+Conformance requirements for implementations — what a package must satisfy
+before calling itself an AVAR verifier, for every AVAR version it declares —
+are normative and live in [`IMPLEMENTATION.md`](./IMPLEMENTATION.md).
+
+The fixture corpus carries its own version, independent of this specification's
+version and of any implementation version, and is published as
+`@avar-standard/fixtures@<corpus-version>`. A published corpus is immutable;
+corrections publish a new corpus version.
+
+---
+
+## 10. Versioning and change control
+
+- `avar/1` is the wire family token. The normative revision is **1.0**.
+- Additive changes (new step kinds, new decision values, new optional fields, new reserved framework tags) are **minor** revisions. Conformant 1.0 verifiers accept them per §2.1.
+- Breaking changes (canonicalization, hash algorithm, envelope layout, field removal, casing) require `avar/2`.
+- **Verdict-bearing changes** — anything affecting a verdict, canonicalization, hashing, signing, the verdict vocabulary, or the issue-kind set — move specification, fixtures, reference implementation, and producers **together, in one change**. Non-verdict metadata may lag.
+- Dependency direction, after ratification of this baseline:
+
+```text
+specification  ->  fixtures  ->  reference implementation  ->  producers
+```
+
+- **No private-only receipt semantics.** If a producer emits it, this
+  specification defines it and the public reference verifier either understands
+  it or explicitly reports it unresolved (§6.4).
 
 ---
 
 ## 11. Governance
 
-Aarmatix LLC stewards AVAR `1.x`. Editorial changes, clarifications, and fixture additions are made by the steward at their discretion, with a `CHANGELOG.md` entry. Substantive protocol changes require a public RFC starting with `avar/2`.
+Aarmatix LLC stewards AVAR `1.x`. Editorial changes, clarifications, and
+fixture additions are made by the steward with a `CHANGELOG.md` entry.
+Substantive protocol changes require a public RFC starting with `avar/2`.
 
-The spec text is licensed under CC-BY-4.0 (see `LICENSE`). The reference implementation (`@avar-standard/core`, `@avar-standard/verify`) is licensed separately under Apache-2.0 in the [`Aarmatix/avar`](https://github.com/Aarmatix/avar) repository.
+Spec text is CC-BY-4.0. The reference implementation is Apache-2.0 and lives in
+the public reference-verifier repository; a vendor runtime is one conforming
+producer and holds no special status under this specification.

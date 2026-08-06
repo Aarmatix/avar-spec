@@ -38,8 +38,8 @@ still trips `subject_mismatch` regardless of the metadata block.
 
 ## New / clarified rules
 
-- **R1 — Stable ID form.** New manifests issued by `aarmos authority
-  publish` MUST set `authority.id` to `aarmos://authority/<slug>` where
+- **R1 — Stable ID form.** New manifests issued by a conforming authority
+  publisher MUST set `authority.id` to `aarmos://authority/<slug>` where
   `<slug>` matches `^[a-z0-9](-?[a-z0-9])*$` and is 1–63 chars.
 - **R2 — Legacy IDs still verify.** Verifiers MUST accept any string in
   `authority.id`. Operators upgrading from 1.7 keep working subscriptions;

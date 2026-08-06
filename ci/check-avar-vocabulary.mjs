@@ -44,6 +44,34 @@ const CODE_BANS = [
 const SCAN_EXT = new Set([".md", ".ts", ".tsx", ".js", ".mjs", ".cjs", ".json", ".rs", ".py", ".yaml", ".yml"]);
 const SKIP_DIRS = new Set(["node_modules", ".git", "dist", "build", "target", ".next", ".turbo"]);
 
+// The guardrail tooling itself must name the tokens it bans.
+const SKIP_FILES = new Set(["check-avar-vocabulary.mjs", "check-ip-leaks.mjs", "ip-leak-tokens.json"]);
+
+// Unavoidable public tokens: the expansion of the acronym, the steward's legal
+// name, and normative wire literals that are part of the format itself.
+const VENDOR_ALLOWED = [
+  /Aarmos Verifiable Action Record/g,
+  /Aarmatix LLC/g,
+  /Aarmatix\/[A-Za-z0-9._-]+/g,
+  /aarmos:\/\/[^\s"'`)]*/gi,
+  /urn:aarmos:[^\s"'`)]*/gi,
+  /https?:\/\/[^\s"'`)]*aarmos\.io[^\s"'`)]*/gi,
+  /@aarmos\/[a-z0-9-]+/gi,
+  /aarmos-[a-z0-9-]+/gi,
+  /\.aarmos\b/gi,
+];
+
+// Vendor names inside code fences / inline code are examples, not positioning.
+function stripCode(src) {
+  return src.replace(/```[\s\S]*?```/g, "").replace(/`[^`\n]*`/g, "");
+}
+
+function neutralizeVendor(src, isMd) {
+  let out = isMd ? stripCode(src) : src;
+  for (const re of VENDOR_ALLOWED) out = out.replace(re, "");
+  return out;
+}
+
 // Markdown files in ALL repos may name Aarmos as an example producer,
 // governance contact, or historical note. Code files may not.
 const MARKDOWN_ALLOWS_VENDOR = new Set([".md"]);
@@ -54,7 +82,7 @@ function walk(dir, out = []) {
     const full = join(dir, name);
     const st = statSync(full);
     if (st.isDirectory()) walk(full, out);
-    else if (SCAN_EXT.has(extname(name))) out.push(full);
+    else if (SCAN_EXT.has(extname(name)) && !SKIP_FILES.has(name)) out.push(full);
   }
   return out;
 }
@@ -86,13 +114,17 @@ function main() {
 
     for (const { pattern, note } of bans) {
       // Vendor-name bans (aarmos/aarmatix) allow Markdown in non-spec repos
-      const isVendorBan = /\baarmos\b|\baarmatix\b/i.test(pattern.source);
-      if (isVendorBan && isMd && repo !== "spec") continue;
+      const isVendorBan = /aarmos|aarmatix/i.test(pattern.source);
+      // Vendor names are allowed in rationale Markdown (ADRs, RFCs, governance).
+      // Normative spec text under spec/ must stay vendor-neutral.
+      const isNormativeSpecText = repo === "spec" && /(^|\/)spec\//.test(file.replace(root + "/", ""));
+      if (isVendorBan && isMd && !isNormativeSpecText) continue;
 
-      if (pattern.test(src)) {
-        const lines = src.split("\n");
+      const haystack = isVendorBan ? neutralizeVendor(src, isMd) : src;
+      if (pattern.test(haystack)) {
+        const lines = haystack.split("\n");
         const lineNo = lines.findIndex((l) => pattern.test(l)) + 1;
-        violations.push({ file, line: lineNo, note, match: (src.match(pattern) || [""])[0] });
+        violations.push({ file, line: lineNo, note, match: (haystack.match(pattern) || [""])[0] });
       }
     }
 
