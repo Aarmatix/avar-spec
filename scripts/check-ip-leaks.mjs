@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Standalone IP-leak scanner for public Aarmos repos (avar-spec, invite-spec,
 // bundle-spec, homebrew-tap). Drop this file at scripts/check-ip-leaks.mjs
-// alongside ip-leak-tokens.json at the repo root. See .lovable/ci-templates/README.md.
+// alongside ip-leak-tokens.json at the repo root.
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 
