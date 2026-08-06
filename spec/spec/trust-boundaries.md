@@ -138,6 +138,7 @@ record an `unverified_binding` disclosure at coverage level `unobserved`.
 An implementation conforms when, for the same artifacts and the same
 `now`, it produces the same commitment strings and the same verdicts as the
 reference implementation in `@avar-standard/core`
-(`packages/avar-core/src/boundary.ts`) and its WASM mirror
-(`packages/avar-verify-wasm/src/verify-boundary.mjs`). Parity is enforced
-in CI with network access denied.
+(`packages/avar-core/src/boundary.ts`)
+and passes the normative fixture corpus published as
+`@avar-standard/fixtures`. Parity is enforced in CI with network access
+denied.
